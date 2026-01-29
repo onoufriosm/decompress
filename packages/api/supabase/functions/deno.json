@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "lib": ["deno.window", "deno.unstable"]
+  },
+  "imports": {
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2",
+    "@anthropic-ai/sdk": "https://esm.sh/@anthropic-ai/sdk@0.24"
+  }
+}

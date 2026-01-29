@@ -1,0 +1,37 @@
+{
+  "name": "@decompress/api",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "deploy": "./scripts/deploy.sh all",
+    "deploy:migrate": "./scripts/deploy.sh migrate",
+    "deploy:functions": "./scripts/deploy.sh functions",
+    "deploy:function": "./scripts/deploy.sh function",
+    "deploy:types": "./scripts/deploy.sh types",
+    "deploy:secrets": "./scripts/deploy.sh secrets",
+    "deploy:status": "./scripts/deploy.sh status",
+    "db:init": "supabase init --workdir .",
+    "db:link": "supabase link --project-ref $SUPABASE_PROJECT_REF",
+    "db:migrate": "supabase db push",
+    "db:migrate:new": "supabase migration new",
+    "db:migrate:status": "supabase migration list",
+    "db:generate-types": "supabase gen types typescript --project-id $SUPABASE_PROJECT_REF > src/types/database.ts",
+    "db:reset": "supabase db reset"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.47.0",
+    "dotenv": "^16.4.7",
+    "hono": "^4.6.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/deno": "^2.5.0",
+    "@types/node": "^22.10.0",
+    "supabase": "^2.72.8",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
