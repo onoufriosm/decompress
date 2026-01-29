@@ -12,10 +12,10 @@ import {
   requireAuth,
   getQueryUsage,
   recordQuery,
-  type AuthUser,
 } from "../middleware/auth.js";
+import type { AppEnv } from "../types/hono.js";
 
-const chat = new Hono();
+const chat = new Hono<AppEnv>();
 
 // Schema for chat request - supports both v5 (content string) and v6 (parts array) formats
 const messageSchema = z.object({
@@ -56,7 +56,7 @@ function normalizeMessages(messages: z.infer<typeof messageSchema>[]): Array<{ r
 
 // Get query usage for current user
 chat.get("/usage", requireAuth, async (c) => {
-  const user = c.get("user") as AuthUser;
+  const user = c.get("user");
   const usage = await getQueryUsage(user.id);
 
   return c.json(usage);
@@ -64,7 +64,7 @@ chat.get("/usage", requireAuth, async (c) => {
 
 // Stream chat endpoint
 chat.post("/", requireAuth, zValidator("json", chatRequestSchema), async (c) => {
-  const user = c.get("user") as AuthUser;
+  const user = c.get("user");
   const { messages, videoIds, provider: requestedProvider } = c.req.valid("json");
 
   // Check query limit
@@ -133,8 +133,8 @@ ${transcriptContext}`
       await recordQuery(user.id, {
         provider,
         model: envConfig.model,
-        inputTokens: tokenUsage.promptTokens,
-        outputTokens: tokenUsage.completionTokens,
+        inputTokens: tokenUsage.inputTokens,
+        outputTokens: tokenUsage.outputTokens,
         videoIds,
       });
     },

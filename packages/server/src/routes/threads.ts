@@ -2,9 +2,10 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { supabaseAdmin } from "../lib/supabase.js";
-import { requireAuth, type AuthUser } from "../middleware/auth.js";
+import { requireAuth } from "../middleware/auth.js";
+import type { AppEnv } from "../types/hono.js";
 
-const threads = new Hono();
+const threads = new Hono<AppEnv>();
 
 // Schema for creating a thread
 const createThreadSchema = z.object({
@@ -25,7 +26,7 @@ const addMessageSchema = z.object({
 
 // GET /threads - List user's threads
 threads.get("/", requireAuth, async (c) => {
-  const user = c.get("user") as AuthUser;
+  const user = c.get("user");
 
   const { data, error } = await supabaseAdmin
     .from("chat_threads")
@@ -58,7 +59,7 @@ threads.get("/", requireAuth, async (c) => {
 
 // POST /threads - Create a new thread
 threads.post("/", requireAuth, zValidator("json", createThreadSchema), async (c) => {
-  const user = c.get("user") as AuthUser;
+  const user = c.get("user");
   const { title, videoIds } = c.req.valid("json");
 
   // Create the thread
@@ -90,7 +91,7 @@ threads.post("/", requireAuth, zValidator("json", createThreadSchema), async (c)
 
 // GET /threads/:id - Get a specific thread with messages
 threads.get("/:id", requireAuth, async (c) => {
-  const user = c.get("user") as AuthUser;
+  const user = c.get("user");
   const threadId = c.req.param("id");
 
   // Get thread
@@ -128,10 +129,13 @@ threads.get("/:id", requireAuth, async (c) => {
 
   const videos = (threadVideos || []).map((tv) => {
     const video = Array.isArray(tv.video) ? tv.video[0] : tv.video;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const source = (video as any)?.source;
+    const sourceName = Array.isArray(source) ? source[0]?.name : source?.name;
     return {
       id: tv.video_id,
-      title: video?.title || "Unknown",
-      source_name: Array.isArray(video?.source) ? video.source[0]?.name : video?.source?.name || "Unknown",
+      title: (video as { title?: string })?.title || "Unknown",
+      source_name: sourceName || "Unknown",
     };
   });
 
@@ -145,7 +149,7 @@ threads.get("/:id", requireAuth, async (c) => {
 
 // PATCH /threads/:id - Update thread title
 threads.patch("/:id", requireAuth, zValidator("json", updateThreadSchema), async (c) => {
-  const user = c.get("user") as AuthUser;
+  const user = c.get("user");
   const threadId = c.req.param("id");
   const { title } = c.req.valid("json");
 
@@ -166,7 +170,7 @@ threads.patch("/:id", requireAuth, zValidator("json", updateThreadSchema), async
 
 // DELETE /threads/:id - Delete a thread
 threads.delete("/:id", requireAuth, async (c) => {
-  const user = c.get("user") as AuthUser;
+  const user = c.get("user");
   const threadId = c.req.param("id");
 
   const { error } = await supabaseAdmin
@@ -184,7 +188,7 @@ threads.delete("/:id", requireAuth, async (c) => {
 
 // POST /threads/:id/messages - Add a message to a thread
 threads.post("/:id/messages", requireAuth, zValidator("json", addMessageSchema), async (c) => {
-  const user = c.get("user") as AuthUser;
+  const user = c.get("user");
   const threadId = c.req.param("id");
   const { role, content } = c.req.valid("json");
 
@@ -220,7 +224,7 @@ threads.post("/:id/messages", requireAuth, zValidator("json", addMessageSchema),
 
 // PUT /threads/:id/videos - Update videos associated with a thread
 threads.put("/:id/videos", requireAuth, zValidator("json", z.object({ videoIds: z.array(z.string()) })), async (c) => {
-  const user = c.get("user") as AuthUser;
+  const user = c.get("user");
   const threadId = c.req.param("id");
   const { videoIds } = c.req.valid("json");
 

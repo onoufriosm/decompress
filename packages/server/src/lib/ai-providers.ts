@@ -1,7 +1,7 @@
 import { anthropic } from "@ai-sdk/anthropic";
 import { openai } from "@ai-sdk/openai";
 import { google } from "@ai-sdk/google";
-import type { LanguageModelV1 } from "ai";
+import type { LanguageModel } from "ai";
 
 export type AIProvider = "anthropic" | "openai" | "google";
 
@@ -28,7 +28,7 @@ export const ESTIMATED_COST_PER_QUERY: Record<AIProvider, number> = {
 // Monthly query limit (based on $4 budget / estimated cost)
 export const MONTHLY_QUERY_LIMIT = 200;
 
-export function getModel(config: ProviderConfig): LanguageModelV1 {
+export function getModel(config: ProviderConfig): LanguageModel {
   const { provider, model } = config;
 
   switch (provider) {
