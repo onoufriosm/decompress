@@ -55,17 +55,6 @@ function formatDuration(seconds: number | null): string {
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
-function formatViewCount(count: number | null): string {
-  if (!count) return "";
-  if (count >= 1_000_000) {
-    return `${(count / 1_000_000).toFixed(1)}M views`;
-  }
-  if (count >= 1_000) {
-    return `${(count / 1_000).toFixed(1)}K views`;
-  }
-  return `${count} views`;
-}
-
 function formatRelativeDate(dateString: string | null): string {
   if (!dateString) return "";
   const date = new Date(dateString);
@@ -207,11 +196,11 @@ export function VideosPage() {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[...Array(6)].map((_, i) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {[...Array(8)].map((_, i) => (
             <Card key={i}>
               <Skeleton className="aspect-video w-full" />
-              <CardContent className="p-4">
+              <CardContent className="p-3">
                 <Skeleton className="h-4 w-3/4 mb-2" />
                 <Skeleton className="h-3 w-1/2" />
               </CardContent>
@@ -221,7 +210,7 @@ export function VideosPage() {
       ) : videos.length === 0 ? (
         <p className="text-muted-foreground">No videos found.</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {videos.map((video) => (
             <Link key={video.id} to={`/videos/${video.id}`}>
               <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
@@ -246,8 +235,8 @@ export function VideosPage() {
                     </Badge>
                   )}
                 </div>
-                <CardContent className="p-4">
-                  <h3 className="font-semibold line-clamp-2 mb-1">
+                <CardContent className="p-3">
+                  <h3 className="font-medium text-sm line-clamp-2 mb-1">
                     {video.title}
                   </h3>
                   <p className="text-sm text-muted-foreground">
