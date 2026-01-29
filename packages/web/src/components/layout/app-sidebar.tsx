@@ -59,8 +59,11 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="border-b px-6 py-4">
-        <h1 className="text-xl font-bold">Decompress</h1>
+      <SidebarHeader className="border-b px-4 py-3">
+        <NavLink to="/" className="flex items-center gap-2">
+          <img src="/logo.png" alt="Decompress" className="h-8 w-8" />
+          <span className="text-xl font-bold">Decompress</span>
+        </NavLink>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
