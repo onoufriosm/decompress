@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Check, Sparkles, LogOut } from "lucide-react";
-import { SUBSCRIPTION_PRICE, MONTHLY_TOKEN_LIMIT_USD } from "@/lib/stripe";
+import { SUBSCRIPTION_PRICE } from "@/lib/stripe";
 
 export function TrialExpiredScreen() {
   const { signOut } = useAuth();

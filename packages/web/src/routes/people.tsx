@@ -162,11 +162,11 @@ export function PeoplePage() {
             </Card>
           ))}
         </div>
-      ) : people.length === 0 ? (
+      ) : filteredPeople.length === 0 ? (
         <p className="text-muted-foreground">No people found.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {people.map((person) => (
+          {filteredPeople.map((person) => (
             <Link key={person.id} to={`/people/${person.id}`}>
               <Card className="p-4 hover:shadow-lg transition-shadow h-full">
                 <div className="flex items-start gap-4">
