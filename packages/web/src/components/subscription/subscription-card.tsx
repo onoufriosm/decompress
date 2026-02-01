@@ -182,10 +182,10 @@ export function SubscriptionCard() {
             <Check className="h-4 w-4 text-green-500" />
             Chat with multiple videos at once
           </li>
-          <li className="flex items-center gap-2 text-sm">
+          {/* <li className="flex items-center gap-2 text-sm">
             <Check className="h-4 w-4 text-green-500" />
             ${MONTHLY_TOKEN_LIMIT_USD} monthly AI budget
-          </li>
+          </li> */}
         </ul>
       </CardContent>
       <CardFooter>

@@ -45,10 +45,14 @@ def get_or_create_source(
     name: str,
     handle: str | None = None,
     source_type: str = "youtube_channel",
+    force_update: bool = False,
     **kwargs: Any,
 ) -> dict:
     """
     Get an existing source or create a new one.
+
+    Args:
+        force_update: If True, overwrite existing metadata values
 
     Returns the source record.
     """
@@ -65,11 +69,17 @@ def get_or_create_source(
 
     if result.data:
         existing = result.data[0]
-        # Update with any new metadata if not already set
+        # Update with any new metadata
         updates = {}
-        for key, value in kwargs.items():
-            if value is not None and not existing.get(key):
-                updates[key] = value
+
+        # Include name and handle in potential updates
+        all_fields = {"name": name, "handle": handle, **kwargs}
+
+        for key, value in all_fields.items():
+            if value is not None:
+                # Update if force_update or field is not already set
+                if force_update or not existing.get(key):
+                    updates[key] = value
         if updates:
             client.table("sources").update(updates).eq("id", existing["id"]).execute()
             existing.update(updates)

@@ -6,6 +6,7 @@ import { logger } from "hono/logger";
 import chat from "./routes/chat.js";
 import threads from "./routes/threads.js";
 import digest from "./routes/digest.js";
+import channels from "./routes/channels.js";
 
 const app = new Hono();
 
@@ -26,6 +27,7 @@ app.get("/health", (c) => c.json({ status: "ok" }));
 app.route("/api/chat", chat);
 app.route("/api/threads", threads);
 app.route("/api/digest", digest);
+app.route("/api/channels", channels);
 
 // Start server
 const port = parseInt(process.env.PORT || "3001");

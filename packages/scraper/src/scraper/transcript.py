@@ -40,12 +40,16 @@ class TranscriptResult:
         return self.content is not None and len(self.content) > 0
 
 
-def fetch_transcript_supadata(video_id: str) -> TranscriptResult:
+def fetch_transcript_supadata(
+    video_id: str, lang: str = "en", require_english: bool = True
+) -> TranscriptResult:
     """
     Fetch transcript using Supadata API.
 
     Args:
         video_id: YouTube video ID
+        lang: Preferred language code (default: "en")
+        require_english: If True, reject transcripts not in English
 
     Returns:
         TranscriptResult with content and metadata
@@ -59,7 +63,7 @@ def fetch_transcript_supadata(video_id: str) -> TranscriptResult:
         )
 
     video_url = f"https://youtu.be/{video_id}"
-    api_url = f"https://api.supadata.ai/v1/transcript?url={video_url}"
+    api_url = f"https://api.supadata.ai/v1/transcript?url={video_url}&lang={lang}"
 
     try:
         response = httpx.get(
@@ -79,17 +83,34 @@ def fetch_transcript_supadata(video_id: str) -> TranscriptResult:
                 # Clean up whitespace
                 text = " ".join(text.split())
                 # Get language from first segment if available
-                lang = content[0].get("lang") if content else None
+                returned_lang = content[0].get("lang") if content else None
             else:
                 # Fallback if content is already a string
                 text = content
-                lang = data.get("lang")
+                returned_lang = data.get("lang")
+
+            # Also check top-level lang field
+            if not returned_lang:
+                returned_lang = data.get("lang")
+
+            # Validate English if required
+            if require_english and returned_lang:
+                # Accept English variants: en, en-US, en-GB, etc.
+                if not returned_lang.lower().startswith("en"):
+                    available_langs = data.get("availableLangs", [])
+                    logger.error(
+                        f"[{video_id}] Transcript not in English (got: {returned_lang}, available: {available_langs})"
+                    )
+                    return TranscriptResult(
+                        content=None,
+                        error=f"Transcript not in English (got: {returned_lang})",
+                    )
 
             # Verify we have meaningful content (not just whitespace or very short)
             if text and len(text) > 10:
                 return TranscriptResult(
                     content=text,
-                    language=lang,
+                    language=returned_lang,
                     provider="supadata",
                 )
             else:
@@ -115,13 +136,16 @@ def fetch_transcript_supadata(video_id: str) -> TranscriptResult:
         )
 
 
-def fetch_transcript_youtube_api(video_id: str, lang: str = "en") -> TranscriptResult:
+def fetch_transcript_youtube_api(
+    video_id: str, lang: str = "en", require_english: bool = True
+) -> TranscriptResult:
     """
     Fetch transcript using YouTube Transcript API (fallback).
 
     Args:
         video_id: YouTube video ID
         lang: Preferred language code
+        require_english: If True, only fetch English transcripts
 
     Returns:
         TranscriptResult with content and metadata
@@ -132,8 +156,11 @@ def fetch_transcript_youtube_api(video_id: str, lang: str = "en") -> TranscriptR
 
         ytt_api = YouTubeTranscriptApi()
 
-        # Try to get transcript in preferred language order
-        languages_to_try = [lang, f"{lang}-US", f"{lang}-GB", "en", "en-US", "en-GB"]
+        # Only try English variants if require_english is True
+        if require_english:
+            languages_to_try = ["en", "en-US", "en-GB"]
+        else:
+            languages_to_try = [lang, f"{lang}-US", f"{lang}-GB", "en", "en-US", "en-GB"]
 
         transcript = ytt_api.fetch(video_id, languages=languages_to_try)
 
@@ -147,7 +174,7 @@ def fetch_transcript_youtube_api(video_id: str, lang: str = "en") -> TranscriptR
         if text and len(text) > 10:
             return TranscriptResult(
                 content=text,
-                language=lang,
+                language="en",
                 provider="youtube_transcript_api",
             )
         else:
@@ -157,9 +184,13 @@ def fetch_transcript_youtube_api(video_id: str, lang: str = "en") -> TranscriptR
             )
 
     except Exception as e:
+        error_msg = str(e)
+        # Check if it's a "no transcript available" error
+        if "No transcripts were found" in error_msg or "not available" in error_msg.lower():
+            logger.error(f"[{video_id}] No English transcript available")
         return TranscriptResult(
             content=None,
-            error=f"YouTube Transcript API error: {str(e)}",
+            error=f"YouTube Transcript API error: {error_msg}",
         )
 
 

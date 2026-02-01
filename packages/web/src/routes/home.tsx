@@ -11,8 +11,6 @@ import { useAuth } from "@/lib/auth";
 import { useFavorites } from "@/lib/use-favorites";
 import { useDigest, useDigestStats, type DigestPeriod, type DigestVideo } from "@/lib/use-digest";
 import {
-  Video,
-  Radio,
   Sparkles,
   Star,
   Check,
@@ -233,68 +231,14 @@ function ChannelGroup({ source, showSummaries }: ChannelGroupProps) {
 }
 
 export function HomePage() {
-  const { user, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
   const { favorites, loading: favoritesLoading } = useFavorites();
   const [period, setPeriod] = useState<DigestPeriod>("day");
   const [showSummaries, setShowSummaries] = useState(true);
   const { videos, videosBySource, summaryCount, totalCount, loading: digestLoading } = useDigest(period);
   const { stats, loading: statsLoading } = useDigestStats();
 
-  // Not logged in - show welcome page
-  if (!authLoading && !user) {
-    return (
-      <div className="p-6">
-        <div className="max-w-2xl mx-auto text-center py-12">
-          <h1 className="text-3xl font-bold mb-4">Welcome to Decompress</h1>
-          <p className="text-muted-foreground mb-8">
-            Your personal podcast and video digest. Sign in to favorite channels and get
-            personalized digests of new content.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <Card className="p-4">
-              <Video className="h-8 w-8 mb-2 mx-auto text-primary" />
-              <h3 className="font-semibold">Browse Videos</h3>
-              <p className="text-sm text-muted-foreground">
-                Explore videos with AI-generated summaries
-              </p>
-            </Card>
-            <Card className="p-4">
-              <Star className="h-8 w-8 mb-2 mx-auto text-yellow-500" />
-              <h3 className="font-semibold">Favorite Channels</h3>
-              <p className="text-sm text-muted-foreground">
-                Star your favorite channels for quick access
-              </p>
-            </Card>
-            <Card className="p-4">
-              <Sparkles className="h-8 w-8 mb-2 mx-auto text-purple-500" />
-              <h3 className="font-semibold">AI Summaries</h3>
-              <p className="text-sm text-muted-foreground">
-                Get concise summaries of lengthy videos
-              </p>
-            </Card>
-          </div>
-          <div className="flex gap-4 justify-center">
-            <Link to="/videos">
-              <Button>
-                <Video className="mr-2 h-4 w-4" />
-                Browse Videos
-              </Button>
-            </Link>
-            <Link to="/channels">
-              <Button variant="outline">
-                <Radio className="mr-2 h-4 w-4" />
-                View Channels
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   const isLoading = authLoading || favoritesLoading || digestLoading || statsLoading;
-
-  // Logged in - show digest
   return (
     <div className="p-6 max-w-5xl mx-auto">
       {/* Header */}
@@ -356,23 +300,17 @@ export function HomePage() {
         </div>
       </div>
 
-      {/* No favorites prompt */}
+      {/* Favorites hint */}
       {!isLoading && favorites.length === 0 && (
-        <Card className="mb-8">
-          <CardContent className="p-8 text-center">
-            <Star className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="font-semibold text-lg mb-2">No favorite channels yet</h3>
-            <p className="text-muted-foreground mb-4">
-              Star some channels to see their videos in your digest.
-            </p>
-            <Link to="/channels">
-              <Button>
-                <Radio className="mr-2 h-4 w-4" />
-                Browse Channels
-              </Button>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
+          <Star className="h-4 w-4" />
+          <span>
+            <Link to="/channels" className="text-primary hover:underline">
+              Favorite channels
             </Link>
-          </CardContent>
-        </Card>
+            {" "}to filter your digest to only those channels.
+          </span>
+        </div>
       )}
 
       {/* Loading State */}
@@ -407,14 +345,13 @@ export function HomePage() {
       )}
 
       {/* Empty State */}
-      {!isLoading && favorites.length > 0 && videos.length === 0 && (
+      {!isLoading && videos.length === 0 && (
         <Card>
           <CardContent className="p-8 text-center">
             <Check className="h-12 w-12 mx-auto mb-4 text-green-500" />
             <h3 className="font-semibold text-lg mb-2">All caught up!</h3>
             <p className="text-muted-foreground">
-              No new videos from your favorite channels{" "}
-              {period === "day" ? "today" : "this week"}.
+              No new videos {period === "day" ? "today" : "this week"}.
             </p>
           </CardContent>
         </Card>

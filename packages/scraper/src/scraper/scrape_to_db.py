@@ -56,6 +56,8 @@ def scrape_channel_to_db(
     fetch_metadata: bool = True,
     verbose: bool = True,
     transcript_providers: list[str] | None = None,
+    force_update: bool = False,
+    metadata_only: bool = False,
 ) -> dict:
     """
     Scrape a single channel and save to Supabase.
@@ -67,6 +69,8 @@ def scrape_channel_to_db(
         fetch_transcripts: Whether to fetch transcripts
         verbose: Print progress messages
         transcript_providers: List of providers to use for transcripts (default: ["youtube_api", "supadata"])
+        force_update: Force update channel metadata even if it already exists
+        metadata_only: Only update channel metadata, skip video scraping
 
     Returns:
         Stats dict with counts
@@ -84,7 +88,52 @@ def scrape_channel_to_db(
     if verbose:
         print(f"\n{'='*60}")
         print(f"Scraping: {channel_name} ({channel_handle})")
+        if metadata_only:
+            print(f"(metadata only)")
         print(f"{'='*60}")
+
+    # Get channel metadata (including description)
+    channel_metadata = {}
+    try:
+        channel_metadata = get_channel_metadata(channel_url)
+        if verbose:
+            if channel_metadata.get("name"):
+                print(f"Channel name from YouTube: {channel_metadata.get('name')}")
+            if channel_metadata.get("thumbnail_url"):
+                print(f"Fetched channel thumbnail: {channel_metadata.get('thumbnail_url')[:60]}...")
+            if channel_metadata.get("description"):
+                print(f"Fetched channel description ({len(channel_metadata.get('description', ''))} chars)")
+    except Exception as e:
+        if verbose:
+            print(f"Could not fetch channel metadata: {e}")
+
+    # Use YouTube metadata name if available, otherwise fall back to provided name
+    resolved_channel_name = channel_metadata.get("name") or channel_name
+
+    # Get or create source in database
+    source = get_or_create_source(
+        external_id=channel_handle.lstrip("@"),
+        name=resolved_channel_name,
+        handle=channel_handle,
+        source_type="youtube_channel",
+        force_update=force_update,
+        description=channel_metadata.get("description"),
+        subscriber_count=channel_metadata.get("subscriber_count"),
+        thumbnail_url=channel_metadata.get("thumbnail_url"),
+    )
+    source_id = source["id"]
+
+    if verbose:
+        print(f"Source ID: {source_id}")
+        if force_update:
+            print(f"Force update: enabled")
+
+    # If metadata_only, skip video scraping
+    if metadata_only:
+        if verbose:
+            total_time = time.time() - channel_start_time
+            print(f"\nChannel metadata updated in {total_time:.1f}s")
+        return stats
 
     # Get video list from YouTube
     if verbose:
@@ -100,37 +149,17 @@ def scrape_channel_to_db(
 
     stats["videos_found"] = len(videos)
 
+    # Filter out short videos (< 20 minutes) - likely trailers, summaries, or non-interview content
+    MIN_DURATION_SECONDS = 20 * 60  # 20 minutes
+    videos = [v for v in videos if (v.get("duration") or 0) >= MIN_DURATION_SECONDS]
+    stats["videos_after_filter"] = len(videos)
+
     if verbose:
-        print(f"Found {len(videos)} videos, processing {min(video_limit, len(videos))} ({video_list_time:.1f}s)")
+        filtered_count = stats["videos_found"] - len(videos)
+        print(f"Found {stats['videos_found']} videos, {filtered_count} filtered (< 20 min), processing {min(video_limit, len(videos))} ({video_list_time:.1f}s)")
 
     # Limit videos
     videos_to_process = videos[:video_limit]
-
-    # Get channel metadata (including description)
-    channel_metadata = {}
-    try:
-        channel_metadata = get_channel_metadata(channel_url)
-        if verbose and channel_metadata.get("description"):
-            print(f"Fetched channel description ({len(channel_metadata.get('description', ''))} chars)")
-    except Exception as e:
-        if verbose:
-            print(f"Could not fetch channel metadata: {e}")
-
-    # Get or create source in database
-    # Extract channel_id from first video's metadata if possible
-    source = get_or_create_source(
-        external_id=channel_handle.lstrip("@"),
-        name=channel_name,
-        handle=channel_handle,
-        source_type="youtube_channel",
-        description=channel_metadata.get("description"),
-        subscriber_count=channel_metadata.get("subscriber_count"),
-        thumbnail_url=channel_metadata.get("thumbnail_url"),
-    )
-    source_id = source["id"]
-
-    if verbose:
-        print(f"Source ID: {source_id}")
 
     # Create scrape log
     scrape_log = create_scrape_log(source_id)
@@ -252,6 +281,8 @@ def scrape_all_channels(
     channels_filter: list[str] | None = None,
     verbose: bool = True,
     transcript_providers: list[str] | None = None,
+    force_update: bool = False,
+    metadata_only: bool = False,
 ) -> dict:
     """
     Scrape all channels from channels.json to Supabase.
@@ -262,6 +293,8 @@ def scrape_all_channels(
         channels_filter: Optional list of channel names to filter
         verbose: Print progress messages
         transcript_providers: List of providers to use for transcripts
+        force_update: Force update channel metadata even if it already exists
+        metadata_only: Only update channel metadata, skip video scraping
 
     Returns:
         Combined stats dict
@@ -283,6 +316,10 @@ def scrape_all_channels(
         print(f"\nScraping {len(channels)} channels, {video_limit} videos each")
         print(f"Metadata: {'enabled' if fetch_metadata else 'disabled'}")
         print(f"Transcripts: {'enabled' if fetch_transcripts else 'disabled'}")
+        if metadata_only:
+            print(f"Mode: metadata only (no videos)")
+        if force_update:
+            print(f"Force update: enabled")
 
     for channel_name, channel_handle in channels.items():
         try:
@@ -294,6 +331,8 @@ def scrape_all_channels(
                 fetch_metadata=fetch_metadata,
                 verbose=verbose,
                 transcript_providers=transcript_providers,
+                force_update=force_update,
+                metadata_only=metadata_only,
             )
 
             total_stats["channels_processed"] += 1
@@ -365,6 +404,16 @@ def main():
         action="store_true",
         help="Use only Supadata for transcripts (skip youtube_api)"
     )
+    parser.add_argument(
+        "--force-update",
+        action="store_true",
+        help="Force update channel metadata even if it already exists"
+    )
+    parser.add_argument(
+        "--metadata-only",
+        action="store_true",
+        help="Only update channel metadata, skip video scraping"
+    )
 
     args = parser.parse_args()
 
@@ -381,6 +430,8 @@ def main():
             fetch_metadata=not args.fast,
             verbose=not args.quiet,
             transcript_providers=transcript_providers,
+            force_update=args.force_update,
+            metadata_only=args.metadata_only,
         )
     else:
         # All channels mode
@@ -391,6 +442,8 @@ def main():
             channels_filter=args.channels,
             verbose=not args.quiet,
             transcript_providers=transcript_providers,
+            force_update=args.force_update,
+            metadata_only=args.metadata_only,
         )
 
 

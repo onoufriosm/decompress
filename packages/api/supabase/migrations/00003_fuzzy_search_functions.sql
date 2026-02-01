@@ -112,7 +112,7 @@ BEGIN
             s.last_scraped_at,
             1.0::REAL AS similarity_score
         FROM sources s
-        WHERE s.source_type = source_type_filter
+        WHERE s.type = source_type_filter
         ORDER BY s.name
         LIMIT result_limit;
     ELSE
@@ -135,7 +135,7 @@ BEGIN
             ) AS similarity_score
         FROM sources s
         WHERE
-            s.source_type = source_type_filter
+            s.type = source_type_filter
             AND (
                 s.name % search_term
                 OR s.handle % search_term

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,10 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Mic, Users } from "lucide-react";
+
+type TabFilter = "all" | "hosts" | "guests";
 
 interface Person {
   id: string;
@@ -32,6 +35,18 @@ export function PeoplePage() {
   const [people, setPeople] = useState<Person[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [activeTab, setActiveTab] = useState<TabFilter>("all");
+
+  const filteredPeople = useMemo(() => {
+    switch (activeTab) {
+      case "hosts":
+        return people.filter((p) => p.host_count > 0);
+      case "guests":
+        return people.filter((p) => p.guest_count > 0);
+      default:
+        return people;
+    }
+  }, [people, activeTab]);
 
   useEffect(() => {
     async function fetchPeople() {
@@ -114,6 +129,13 @@ export function PeoplePage() {
     <div className="p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold mb-4">People</h1>
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabFilter)} className="mb-4">
+          <TabsList>
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="hosts">Hosts</TabsTrigger>
+            <TabsTrigger value="guests">Guests</TabsTrigger>
+          </TabsList>
+        </Tabs>
         <div className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input

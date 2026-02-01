@@ -7,7 +7,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "vercel-build": "tsc"
+    "vercel-build": "echo 'Skipping build - Vercel handles TypeScript'"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.23",

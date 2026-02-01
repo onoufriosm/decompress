@@ -62,9 +62,20 @@ def slugify(name: str) -> str:
     return slug.strip("-")
 
 
-def search_wikipedia(name: str) -> str | None:
-    """Search Wikipedia API for person's page URL."""
+def search_wikipedia(name: str) -> tuple[str | None, str | None]:
+    """Search Wikipedia API for person's page URL and image.
+
+    Returns:
+        Tuple of (wikipedia_url, image_url)
+    """
+    headers = {
+        "User-Agent": "DecompressScraper/1.0 (podcast-video-scraper; contact@example.com)"
+    }
+    wikipedia_url = None
+    image_url = None
+
     try:
+        # First, search for the page
         url = "https://en.wikipedia.org/w/api.php"
         params = {
             "action": "query",
@@ -73,18 +84,38 @@ def search_wikipedia(name: str) -> str | None:
             "format": "json",
             "srlimit": 1,
         }
-        headers = {
-            "User-Agent": "DecompressScraper/1.0 (podcast-video-scraper; contact@example.com)"
-        }
         response = httpx.get(url, params=params, headers=headers, timeout=10)
         response.raise_for_status()
         results = response.json().get("query", {}).get("search", [])
-        if results:
-            title = results[0]["title"]
-            return f"https://en.wikipedia.org/wiki/{quote(title.replace(' ', '_'))}"
+
+        if not results:
+            return None, None
+
+        title = results[0]["title"]
+        wikipedia_url = f"https://en.wikipedia.org/wiki/{quote(title.replace(' ', '_'))}"
+
+        # Now fetch the page image using pageimages API
+        image_params = {
+            "action": "query",
+            "titles": title,
+            "prop": "pageimages",
+            "pithumbsize": 500,  # Get a reasonable size thumbnail
+            "format": "json",
+        }
+        image_response = httpx.get(url, params=image_params, headers=headers, timeout=10)
+        image_response.raise_for_status()
+        pages = image_response.json().get("query", {}).get("pages", {})
+
+        # Get the first (and only) page result
+        for page_data in pages.values():
+            if "thumbnail" in page_data:
+                image_url = page_data["thumbnail"].get("source")
+                break
+
     except Exception as e:
         print(f"    Wikipedia search failed for {name}: {e}")
-    return None
+
+    return wikipedia_url, image_url
 
 
 # =============================================================================
@@ -195,10 +226,12 @@ def upsert_person(
     name: str,
     wikipedia_url: str | None = None,
     website_url: str | None = None,
+    photo_url: str | None = None,
 ) -> dict:
     """Get or create person record.
 
     URLs are stored in the social_links JSONB column.
+    Photo URL is stored in the photo_url column.
     """
     client = get_client()
     slug = slugify(name)
@@ -218,11 +251,15 @@ def upsert_person(
         if website_url and not social_links.get("website"):
             social_links["website"] = website_url
             updates["social_links"] = social_links
+        if photo_url and not person.get("photo_url"):
+            updates["photo_url"] = photo_url
 
         if updates:
             updates["updated_at"] = datetime.now(timezone.utc).isoformat()
             client.table("people").update(updates).eq("id", person["id"]).execute()
             person["social_links"] = social_links
+            if "photo_url" in updates:
+                person["photo_url"] = photo_url
         return person
 
     # Create new person
@@ -239,6 +276,9 @@ def upsert_person(
         "created_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
+    if photo_url:
+        new_person["photo_url"] = photo_url
+
     result = client.table("people").insert(new_person).execute()
     return result.data[0]
 
@@ -474,13 +514,16 @@ def extract_hosts_for_channel(
 
         # Search Wikipedia
         wikipedia_url = None
+        photo_url = None
         if lookup_wikipedia:
-            wikipedia_url = search_wikipedia(name)
+            wikipedia_url, photo_url = search_wikipedia(name)
             if verbose and wikipedia_url:
                 print(f"      Wikipedia: {wikipedia_url}")
+            if verbose and photo_url:
+                print(f"      Photo: {photo_url}")
 
         # Create/get person record
-        person = upsert_person(name, wikipedia_url=wikipedia_url)
+        person = upsert_person(name, wikipedia_url=wikipedia_url, photo_url=photo_url)
 
         # Link to source
         link_person_to_source(
@@ -702,13 +745,16 @@ def extract_guests_for_video(
 
         # Search Wikipedia
         wikipedia_url = None
+        photo_url = None
         if lookup_wikipedia:
-            wikipedia_url = search_wikipedia(name)
+            wikipedia_url, photo_url = search_wikipedia(name)
             if verbose and wikipedia_url:
                 print(f"      Wikipedia: {wikipedia_url}")
+            if verbose and photo_url:
+                print(f"      Photo: {photo_url}")
 
         # Create/get person record
-        person = upsert_person(name, wikipedia_url=wikipedia_url)
+        person = upsert_person(name, wikipedia_url=wikipedia_url, photo_url=photo_url)
 
         # Link to video
         link_person_to_video(

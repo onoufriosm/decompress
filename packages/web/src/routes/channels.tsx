@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/lib/auth";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +9,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FilterPanel } from "@/components/filter-panel";
 import { FavoriteButton } from "@/components/favorite-button";
-import { Search, Video } from "lucide-react";
+import { RequestChannelDialog } from "@/components/request-channel-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Search, Video, Clock } from "lucide-react";
 
 interface Channel {
   id: string;
@@ -20,6 +27,13 @@ interface Channel {
   subscriber_count: number | null;
   video_count: number | null;
   last_scraped_at: string | null;
+}
+
+interface ChannelRequest {
+  id: string;
+  channel_input: string;
+  status: string;
+  created_at: string;
 }
 
 function formatSubscriberCount(count: number | null): string {
@@ -44,7 +58,9 @@ function getInitials(name: string): string {
 
 export function ChannelsPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [channels, setChannels] = useState<Channel[]>([]);
+  const [channelRequests, setChannelRequests] = useState<ChannelRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -107,10 +123,37 @@ export function ChannelsPage() {
     return () => clearTimeout(debounce);
   }, [search, selectedCategories]);
 
+  // Fetch user's channel requests
+  useEffect(() => {
+    async function fetchChannelRequests() {
+      if (!user) {
+        setChannelRequests([]);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("channel_requests")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching channel requests:", error);
+        setChannelRequests([]);
+      } else {
+        setChannelRequests(data || []);
+      }
+    }
+
+    fetchChannelRequests();
+  }, [user]);
+
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-4">Channels</h1>
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-2xl font-bold">Channels</h1>
+          <RequestChannelDialog />
+        </div>
         <div className="relative max-w-md mb-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -126,6 +169,34 @@ export function ChannelsPage() {
           entityType="channel"
         />
       </div>
+
+      {/* User's pending channel requests */}
+      {channelRequests.length > 0 && (
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold mb-3">Your Requests</h2>
+          <div className="flex flex-wrap gap-2">
+            {channelRequests.map((request) => (
+              <Tooltip key={request.id}>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-lg text-sm cursor-default">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <span className="truncate max-w-[200px]">{request.channel_input}</span>
+                    <Badge
+                      variant={request.status === "pending" ? "secondary" : "default"}
+                      className="text-xs"
+                    >
+                      {request.status}
+                    </Badge>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="max-w-[300px] break-all">{request.channel_input}</p>
+                </TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -157,6 +228,7 @@ export function ChannelsPage() {
                   <AvatarImage
                     src={channel.thumbnail_url || undefined}
                     alt={channel.name}
+                    referrerPolicy="no-referrer"
                   />
                   <AvatarFallback>{getInitials(channel.name)}</AvatarFallback>
                 </Avatar>

@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "./supabase";
-import { useAuth } from "./auth";
 import { useFavorites } from "./use-favorites";
 
 export type DigestPeriod = "day" | "week";
@@ -70,7 +69,6 @@ function transformVideo(video: VideoWithSource): DigestVideo {
 }
 
 export function useDigest(period: DigestPeriod = "day") {
-  const { user } = useAuth();
   const { favoriteIds, loading: favoritesLoading } = useFavorites();
   const [videos, setVideos] = useState<DigestVideo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,76 +84,45 @@ export function useDigest(period: DigestPeriod = "day") {
     const cutoff = getCutoffDate(period);
 
     try {
-      if (user && favoriteIds.size > 0) {
-        // Authenticated with favorites: get videos from favorited channels
-        const { data, error: fetchError } = await supabase
-          .from("videos")
-          .select(`
-            id,
-            title,
-            description,
-            thumbnail_url,
-            duration_seconds,
-            published_at,
-            summary,
-            view_count,
-            source_id,
-            source:sources(id, name, thumbnail_url)
-          `)
-          .in("source_id", Array.from(favoriteIds))
-          .gte("published_at", cutoff)
-          .not("thumbnail_url", "is", null)
-          .order("published_at", { ascending: false })
-          .limit(100);
+      // Build query - filter by favorites if user has any, otherwise show all
+      let query = supabase
+        .from("videos")
+        .select(`
+          id,
+          title,
+          description,
+          thumbnail_url,
+          duration_seconds,
+          published_at,
+          summary,
+          view_count,
+          source_id,
+          source:sources(id, name, thumbnail_url)
+        `)
+        .gte("published_at", cutoff)
+        .not("thumbnail_url", "is", null)
+        .order("published_at", { ascending: false })
+        .limit(100);
 
-        if (fetchError) throw fetchError;
-
-        // Transform and handle Supabase's array return for joins
-        const transformed = (data || []).map((v) => {
-          const video = {
-            ...v,
-            source: Array.isArray(v.source) ? v.source[0] : v.source,
-          } as VideoWithSource;
-          return transformVideo(video);
-        });
-
-        setVideos(transformed);
-      } else if (!user) {
-        // Anonymous: get all recent videos
-        const { data, error: fetchError } = await supabase
-          .from("videos")
-          .select(`
-            id,
-            title,
-            description,
-            thumbnail_url,
-            duration_seconds,
-            published_at,
-            summary,
-            view_count,
-            source_id,
-            source:sources(id, name, thumbnail_url)
-          `)
-          .gte("published_at", cutoff)
-          .not("thumbnail_url", "is", null)
-          .order("published_at", { ascending: false })
-          .limit(100);
-
-        if (fetchError) throw fetchError;
-
-        const transformed = (data || []).map((v) => {
-          const video = {
-            ...v,
-            source: Array.isArray(v.source) ? v.source[0] : v.source,
-          } as VideoWithSource;
-          return transformVideo(video);
-        });
-
-        setVideos(transformed);
-      } else {
-        // User has no favorites
-        setVideos([]);
+      // Filter by favorites if user has favorited channels
+      if (favoriteIds.size > 0) {
+        query = query.in("source_id", Array.from(favoriteIds));
       }
+
+      const { data, error: fetchError } = await query;
+
+      if (fetchError) throw fetchError;
+
+      // Transform and handle Supabase's array return for joins
+      const transformed = (data || []).map((v) => {
+        const video = {
+          ...v,
+          source: Array.isArray(v.source) ? v.source[0] : v.source,
+        } as VideoWithSource;
+        return transformVideo(video);
+      });
+
+      setVideos(transformed);
     } catch (err) {
       console.error("Error fetching digest:", err);
       setError(err instanceof Error ? err.message : "Failed to fetch digest");
@@ -163,7 +130,7 @@ export function useDigest(period: DigestPeriod = "day") {
     } finally {
       setLoading(false);
     }
-  }, [user, favoriteIds, favoritesLoading, period]);
+  }, [period, favoriteIds, favoritesLoading]);
 
   useEffect(() => {
     fetchDigest();
@@ -210,7 +177,6 @@ export function useDigest(period: DigestPeriod = "day") {
 }
 
 export function useDigestStats() {
-  const { user } = useAuth();
   const { favoriteIds, loading: favoritesLoading } = useFavorites();
   const [stats, setStats] = useState<DigestStats>({
     videos_today: 0,
@@ -221,50 +187,33 @@ export function useDigestStats() {
   const [loading, setLoading] = useState(true);
 
   const fetchStats = useCallback(async () => {
-    if (!user || favoritesLoading) {
-      if (!favoritesLoading) {
-        setStats({
-          videos_today: 0,
-          videos_this_week: 0,
-          summaries_today: 0,
-          summaries_this_week: 0,
-        });
-        setLoading(false);
-      }
-      return;
-    }
-
-    if (favoriteIds.size === 0) {
-      setStats({
-        videos_today: 0,
-        videos_this_week: 0,
-        summaries_today: 0,
-        summaries_this_week: 0,
-      });
-      setLoading(false);
-      return;
-    }
+    if (favoritesLoading) return;
 
     setLoading(true);
 
     const dayAgo = getCutoffDate("day");
     const weekAgo = getCutoffDate("week");
-    const sourceIds = Array.from(favoriteIds);
 
     try {
-      // Fetch counts in parallel
-      const [todayResult, weekResult] = await Promise.all([
-        supabase
-          .from("videos")
-          .select("id, summary", { count: "exact", head: false })
-          .in("source_id", sourceIds)
-          .gte("published_at", dayAgo),
-        supabase
-          .from("videos")
-          .select("id, summary", { count: "exact", head: false })
-          .in("source_id", sourceIds)
-          .gte("published_at", weekAgo),
-      ]);
+      // Build base queries
+      let todayQuery = supabase
+        .from("videos")
+        .select("id, summary", { count: "exact", head: false })
+        .gte("published_at", dayAgo);
+
+      let weekQuery = supabase
+        .from("videos")
+        .select("id, summary", { count: "exact", head: false })
+        .gte("published_at", weekAgo);
+
+      // Filter by favorites if user has favorited channels
+      if (favoriteIds.size > 0) {
+        const sourceIds = Array.from(favoriteIds);
+        todayQuery = todayQuery.in("source_id", sourceIds);
+        weekQuery = weekQuery.in("source_id", sourceIds);
+      }
+
+      const [todayResult, weekResult] = await Promise.all([todayQuery, weekQuery]);
 
       const todayVideos = todayResult.data || [];
       const weekVideos = weekResult.data || [];
@@ -280,7 +229,7 @@ export function useDigestStats() {
     } finally {
       setLoading(false);
     }
-  }, [user, favoriteIds, favoritesLoading]);
+  }, [favoriteIds, favoritesLoading]);
 
   useEffect(() => {
     fetchStats();

@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { User, Session } from "@supabase/supabase-js";
+import { usePostHog } from "posthog-js/react";
 import { supabase } from "./supabase";
 
 interface AuthContextType {
@@ -16,6 +17,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const posthog = usePostHog();
 
   useEffect(() => {
     // Get initial session
@@ -28,14 +30,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+
+      // Identify user in PostHog when they sign in
+      if (event === "SIGNED_IN" && session?.user) {
+        posthog.identify(session.user.id, {
+          email: session.user.email,
+        });
+      }
+
+      // Reset PostHog identity when user signs out
+      if (event === "SIGNED_OUT") {
+        posthog.reset();
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [posthog]);
 
   const signInWithOtp = async (email: string) => {
     const { error } = await supabase.auth.signInWithOtp({

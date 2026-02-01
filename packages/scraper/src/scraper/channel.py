@@ -122,12 +122,16 @@ def get_channel_metadata(channel_url: str) -> dict[str, Any]:
                 logger.warning(f"yt-dlp returned None for channel metadata: {channel_url}")
                 return {}
 
+            # Get the best thumbnail URL from the thumbnails list
+            thumbnails = result.get("thumbnails", [])
+            thumbnail_url = thumbnails[-1].get("url") if thumbnails else None
+
             return {
                 "name": result.get("channel", result.get("uploader", "")),
                 "description": result.get("description", ""),
                 "subscriber_count": result.get("channel_follower_count"),
                 "channel_id": result.get("channel_id"),
-                "thumbnail_url": result.get("channel_url"),
+                "thumbnail_url": thumbnail_url,
             }
 
     except Exception as e:

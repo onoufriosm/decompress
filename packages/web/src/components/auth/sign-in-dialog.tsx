@@ -73,9 +73,9 @@ export function SignInDialog({ trigger, open: controlledOpen, onOpenChange }: Si
       )}
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Sign in to Decompress</DialogTitle>
+          <DialogTitle>Get started with Decompress</DialogTitle>
           <DialogDescription>
-            Enter your email to receive a magic link. No password needed.
+            Enter your email to sign in or create an account. You'll get a 7-day free trial — no credit card required.
           </DialogDescription>
         </DialogHeader>
 
@@ -118,6 +118,9 @@ export function SignInDialog({ trigger, open: controlledOpen, onOpenChange }: Si
                 </>
               )}
             </Button>
+            <p className="text-xs text-center text-muted-foreground mt-3">
+              New users get 7 days free. No credit card needed.
+            </p>
           </form>
         )}
       </DialogContent>

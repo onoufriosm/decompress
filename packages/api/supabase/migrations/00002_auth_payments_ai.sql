@@ -323,14 +323,14 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE TRIGGER set_updated_at_profiles
     BEFORE UPDATE ON profiles
     FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at();
+    EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER set_updated_at_subscriptions
     BEFORE UPDATE ON subscriptions
     FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at();
+    EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER set_updated_at_ai_conversations
     BEFORE UPDATE ON ai_conversations
     FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at();
+    EXECUTE FUNCTION update_updated_at_column();
