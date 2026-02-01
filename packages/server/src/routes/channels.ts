@@ -1,11 +1,12 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { requireAuth, type AuthUser } from "../middleware/auth.js";
+import { requireAuth } from "../middleware/auth.js";
 import { supabaseAdmin } from "../lib/supabase.js";
 import { resend, RESEND_FROM_EMAIL, RESEND_FROM_NAME } from "../lib/resend.js";
+import type { AppEnv } from "../types/hono.js";
 
-const channels = new Hono();
+const channels = new Hono<AppEnv>();
 
 const requestChannelSchema = z.object({
   channelInput: z.string().min(1).max(500),
@@ -17,7 +18,7 @@ channels.post(
   requireAuth,
   zValidator("json", requestChannelSchema),
   async (c) => {
-    const user = c.get("user") as AuthUser;
+    const user = c.get("user");
     const { channelInput } = c.req.valid("json");
 
     // Insert the request
