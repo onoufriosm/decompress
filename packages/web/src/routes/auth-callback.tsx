@@ -10,14 +10,14 @@ export function AuthCallbackPage() {
     // Handle the OAuth callback
     supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_IN") {
-        navigate("/videos", { replace: true });
+        navigate("/home", { replace: true });
       }
     });
 
     // Check if we have a session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate("/videos", { replace: true });
+        navigate("/home", { replace: true });
       }
     });
   }, [navigate]);
