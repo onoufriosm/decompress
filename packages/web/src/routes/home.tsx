@@ -233,7 +233,7 @@ function ChannelGroup({ source, showSummaries }: ChannelGroupProps) {
 export function HomePage() {
   const { loading: authLoading } = useAuth();
   const { favorites, loading: favoritesLoading } = useFavorites();
-  const [period, setPeriod] = useState<DigestPeriod>("day");
+  const [period, setPeriod] = useState<DigestPeriod>("week");
   const [showSummaries, setShowSummaries] = useState(true);
   const { videos, videosBySource, summaryCount, totalCount, loading: digestLoading } = useDigest(period);
   const { stats, loading: statsLoading } = useDigestStats();
