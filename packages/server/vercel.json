@@ -4,8 +4,12 @@
   ],
   "crons": [
     {
-      "path": "/api/digest/send",
+      "path": "/api/digest/send?frequency=daily",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/digest/send?frequency=weekly",
+      "schedule": "0 8 * * 0"
     }
   ]
 }

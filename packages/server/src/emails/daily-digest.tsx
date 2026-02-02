@@ -30,11 +30,14 @@ export interface ChannelGroup {
   videos: DigestVideo[];
 }
 
+export type DigestFrequency = "daily" | "weekly";
+
 export interface DailyDigestEmailProps {
   channelGroups: ChannelGroup[];
   totalVideos: number;
   summaryCount: number;
   baseUrl: string;
+  frequency?: DigestFrequency;
 }
 
 function formatDuration(seconds: number | null): string {
@@ -58,8 +61,11 @@ export function DailyDigestEmail({
   totalVideos,
   summaryCount,
   baseUrl,
+  frequency = "daily",
 }: DailyDigestEmailProps) {
-  const previewText = `${totalVideos} new video${totalVideos === 1 ? "" : "s"} from your channels`;
+  const periodLabel = frequency === "weekly" ? "this week" : "today";
+  const digestLabel = frequency === "weekly" ? "Weekly" : "Daily";
+  const previewText = `${totalVideos} new video${totalVideos === 1 ? "" : "s"} ${periodLabel}`;
 
   return (
     <Html>
@@ -70,7 +76,7 @@ export function DailyDigestEmail({
           {/* Header */}
           <Section style={header}>
             <Heading style={h1}>Decompress</Heading>
-            <Text style={subtitle}>Your Daily Digest</Text>
+            <Text style={subtitle}>Your {digestLabel} Digest</Text>
           </Section>
 
           {/* Stats */}
@@ -169,7 +175,7 @@ export function DailyDigestEmail({
               </Link>
             </Text>
             <Text style={unsubscribeText}>
-              You're receiving this because you enabled daily digests.
+              You're receiving this because you enabled {frequency} digests.
             </Text>
           </Section>
         </Container>

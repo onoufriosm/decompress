@@ -3,6 +3,8 @@ import { handle } from "hono/vercel";
 import { cors } from "hono/cors";
 import chat from "../src/routes/chat.js";
 import threads from "../src/routes/threads.js";
+import digest from "../src/routes/digest.js";
+import channels from "../src/routes/channels.js";
 
 const app = new Hono().basePath("/api");
 
@@ -21,5 +23,7 @@ app.get("/health", (c) => c.json({ status: "ok" }));
 // Routes
 app.route("/chat", chat);
 app.route("/threads", threads);
+app.route("/digest", digest);
+app.route("/channels", channels);
 
 export default handle(app);

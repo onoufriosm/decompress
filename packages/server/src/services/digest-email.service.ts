@@ -7,6 +7,8 @@ import {
   type DigestVideo,
 } from "../emails/daily-digest.js";
 
+export type DigestFrequency = "daily" | "weekly";
+
 interface DigestUser {
   user_id: string;
   email: string;
@@ -81,17 +83,21 @@ async function updateLastDigestSent(userId: string) {
   });
 }
 
-export async function sendDigestToUser(user: DigestUser): Promise<{
+export async function sendDigestToUser(
+  user: DigestUser,
+  frequency: DigestFrequency = "daily"
+): Promise<{
   success: boolean;
   videoCount: number;
   error?: string;
 }> {
   const baseUrl = process.env.APP_URL || "https://decompress.app";
+  const hoursBack = frequency === "weekly" ? 168 : 24; // 7 days or 1 day
 
-  // 1. Fetch videos for this user (last 24 hours from favorited channels)
+  // 1. Fetch videos for this user (from favorited channels, or all if no favorites)
   const { data: videos, error: videosError } = await supabaseAdmin.rpc(
     "get_digest_videos",
-    { check_user_id: user.user_id, hours_back: 24 }
+    { check_user_id: user.user_id, hours_back: hoursBack }
   );
 
   if (videosError) {
@@ -117,6 +123,7 @@ export async function sendDigestToUser(user: DigestUser): Promise<{
       totalVideos: videos.length,
       summaryCount,
       baseUrl,
+      frequency,
     })
   );
 
@@ -130,10 +137,11 @@ export async function sendDigestToUser(user: DigestUser): Promise<{
     };
   }
 
+  const periodLabel = frequency === "weekly" ? "this week" : "today";
   const { data, error } = await resend.emails.send({
     from: `${RESEND_FROM_NAME} <${RESEND_FROM_EMAIL}>`,
     to: user.email,
-    subject: `${videos.length} new video${videos.length === 1 ? "" : "s"} from your channels`,
+    subject: `${videos.length} new video${videos.length === 1 ? "" : "s"} ${periodLabel}`,
     html: emailHtml,
   });
 
@@ -166,15 +174,19 @@ export async function sendDigestToUser(user: DigestUser): Promise<{
   return { success: true, videoCount: videos.length };
 }
 
-export async function processAllDigests(): Promise<{
+export async function processAllDigests(
+  frequency: DigestFrequency = "daily"
+): Promise<{
   processed: number;
   sent: number;
   skipped: number;
   failed: number;
   errors: string[];
 }> {
-  // 1. Get eligible users
-  const { data: users, error } = await supabaseAdmin.rpc("get_users_for_digest");
+  // 1. Get eligible users for this frequency
+  const { data: users, error } = await supabaseAdmin.rpc("get_users_for_digest", {
+    target_frequency: frequency,
+  });
 
   if (error) {
     console.error("Error fetching users for digest:", error);
@@ -192,7 +204,7 @@ export async function processAllDigests(): Promise<{
     return { processed: 0, sent: 0, skipped: 0, failed: 0, errors: [] };
   }
 
-  console.log(`Processing digests for ${users.length} users`);
+  console.log(`Processing ${frequency} digests for ${users.length} users`);
 
   const results = {
     processed: 0,
@@ -213,7 +225,7 @@ export async function processAllDigests(): Promise<{
       batch.map(async (user: DigestUser) => {
         results.processed++;
 
-        const result = await sendDigestToUser(user);
+        const result = await sendDigestToUser(user, frequency);
 
         if (result.videoCount === 0) {
           results.skipped++;
