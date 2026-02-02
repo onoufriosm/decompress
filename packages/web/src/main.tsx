@@ -33,6 +33,7 @@ import { ChannelDetailPage } from "./routes/channel-detail";
 import { PeoplePage } from "./routes/people";
 import { PersonDetailPage } from "./routes/person-detail";
 import { ProfilePage } from "./routes/profile";
+import { SubscriptionPage } from "./routes/subscription";
 // AI Chat hidden until Stripe integration is complete
 // import { ChatPage } from "./routes/chat";
 import { AuthCallbackPage } from "./routes/auth-callback";
@@ -101,6 +102,10 @@ const router = createBrowserRouter([
               {
                 path: "profile",
                 element: <ProfilePage />,
+              },
+              {
+                path: "subscription",
+                element: <SubscriptionPage />,
               },
               // AI Chat hidden until Stripe integration is complete
               // {

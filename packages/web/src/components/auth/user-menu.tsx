@@ -57,9 +57,11 @@ export function UserMenu() {
             <span>Profile</span>
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem>
-          <CreditCard className="mr-2 h-4 w-4" />
-          <span>Subscription</span>
+        <DropdownMenuItem asChild>
+          <Link to="/subscription">
+            <CreditCard className="mr-2 h-4 w-4" />
+            <span>Subscription</span>
+          </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => signOut()}>

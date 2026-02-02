@@ -12,10 +12,6 @@ import { Loader2 } from "lucide-react";
 export function RootLayout() {
   const { user } = useAuth();
   const { trialStatus, isSubscribed, loading } = useSubscription();
-  console.log('trialStatus=', trialStatus);
-
-  console.log('isSubscribed=', isSubscribed);
-  console.log('loading=', loading);
 
   // Show loading while checking subscription/trial status
   if (user && loading) {

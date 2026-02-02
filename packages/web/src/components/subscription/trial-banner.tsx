@@ -12,8 +12,6 @@ interface TrialBannerProps {
 export function TrialBanner({ daysRemaining }: TrialBannerProps) {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const isUrgent = daysRemaining <= 2;
-  console.log('checkoutLoading=', checkoutLoading);
-  console.log('isUrgent=', isUrgent);
 
   const handleUpgrade = async () => {
     setCheckoutLoading(true);
