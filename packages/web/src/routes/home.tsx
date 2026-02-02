@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -235,6 +235,17 @@ export function HomePage() {
   const [showSummaries, setShowSummaries] = useState(true);
   const { videos, videosBySource, totalCount, loading: digestLoading } = useDigest(period);
   const { stats, loading: statsLoading } = useDigestStats();
+  const hasSetInitialPeriod = useRef(false);
+
+  // Set default tab to "day" if there are daily videos, otherwise "week"
+  useEffect(() => {
+    if (!statsLoading && !hasSetInitialPeriod.current) {
+      hasSetInitialPeriod.current = true;
+      if (stats.videos_today > 0) {
+        setPeriod("day");
+      }
+    }
+  }, [statsLoading, stats.videos_today]);
 
   const isLoading = authLoading || favoritesLoading || digestLoading || statsLoading;
   return (
