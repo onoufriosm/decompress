@@ -44,6 +44,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         posthog.identify(session.user.id, {
           email: session.user.email,
         });
+
+        // Capture and store user's timezone
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        supabase
+          .from("profiles")
+          .update({ timezone })
+          .eq("id", session.user.id)
+          .then(({ error }) => {
+            if (error) {
+              console.error("Failed to update timezone:", error);
+            }
+          });
       }
 
       // Reset PostHog identity when user signs out
