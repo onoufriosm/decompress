@@ -44,9 +44,14 @@ export interface DigestStats {
 
 function getCutoffDate(period: DigestPeriod): string {
   const now = new Date();
+  // Set to midnight (start of day) in user's local timezone
+  now.setHours(0, 0, 0, 0);
+
   if (period === "day") {
+    // Daily: yesterday at midnight (shows yesterday + today so far)
     now.setDate(now.getDate() - 1);
   } else {
+    // Weekly: 7 days ago at midnight
     now.setDate(now.getDate() - 7);
   }
   return now.toISOString();
