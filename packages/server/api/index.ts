@@ -1,8 +1,6 @@
 import { Hono } from "hono";
 import { handle } from "hono/vercel";
 import { cors } from "hono/cors";
-import chat from "../dist/routes/chat.js";
-import threads from "../dist/routes/threads.js";
 import digest from "../dist/routes/digest.js";
 import channels from "../dist/routes/channels.js";
 
@@ -20,9 +18,10 @@ app.use(
 // Health check
 app.get("/health", (c) => c.json({ status: "ok" }));
 
-// Routes
-app.route("/chat", chat);
-app.route("/threads", threads);
+// Routes - chat and threads disabled due to AI SDK initialization timeout
+// TODO: Re-enable with lazy loading or separate functions
+// app.route("/chat", chat);
+// app.route("/threads", threads);
 app.route("/digest", digest);
 app.route("/channels", channels);
 
