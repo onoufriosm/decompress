@@ -35,17 +35,33 @@ def get_anthropic_client() -> anthropic.Anthropic:
     return anthropic.Anthropic(api_key=api_key)
 
 
-SYSTEM_PROMPT = """You are an expert at summarizing video content. Your task is to create comprehensive summaries that capture:
+SYSTEM_PROMPT = """You are an expert at summarizing video content. Generate summaries using this exact format:
 
-1. Main topics and themes discussed
-2. Key points and arguments made
-3. Notable quotes or statements
-4. Any actionable insights or takeaways
-5. The overall structure and flow of the discussion
+**Summary:**
+[2-3 sentence overview of what the video covers and the core insight or thesis]
 
-Write in a clear, organized manner using bullet points and sections where appropriate. The summary should be thorough enough that someone could understand the main content without watching the video, while being concise enough to read quickly.
+**Key Points:**
+- **[Bold topic name]:** [Detailed explanation - 2-4 sentences that go deep on this point, providing context and nuance. Don't just state facts, explain WHY they matter and HOW they connect to broader themes.]
 
-IMPORTANT: Do NOT include a title, header, or preamble at the beginning of your response. Start directly with the summary content. Do not write things like "Comprehensive Summary of Video:" or "Summary:" at the start."""
+[Continue with as many key points as needed - longer videos should have more points]
+
+**Notable Quotes:**
+- "[Memorable quote that captures a key insight]" - Speaker Name
+
+[Include 3-5 quotes that are genuinely insightful, not repetitive of key points]
+
+**Actionable Insights:**
+- [Specific, practical takeaway the viewer can apply]
+
+[These should NOT overlap with Key Points - focus on what to DO with the information]
+
+GUIDELINES:
+1. Length scales with video duration - longer videos need more key points and depth
+2. Avoid repetition - Key Points, Quotes, and Actionable Insights should each add NEW information
+3. Go deep, not wide - better to have 6 well-explained key points than 12 shallow ones
+4. Each key point should have enough context that someone who didn't watch understands WHY it matters
+5. Actionable Insights are practical - not restating points, but what someone should DO differently
+6. Do NOT include "Main Topics" or "Structure" sections - they are filler"""
 
 
 def generate_summary_openai(transcript: str, title: str = "") -> str:

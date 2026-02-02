@@ -71,7 +71,7 @@ export function SignInDialog({ trigger, open: controlledOpen, onOpenChange }: Si
           )}
         </DialogTrigger>
       )}
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="top-4 translate-y-0 sm:top-[50%] sm:translate-y-[-50%] sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Get started with Decompress</DialogTitle>
           <DialogDescription>

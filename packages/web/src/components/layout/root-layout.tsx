@@ -6,12 +6,16 @@ import { UserMenu } from "@/components/auth/user-menu";
 import { useAuth } from "@/lib/auth";
 import { useSubscription } from "@/hooks/use-subscription";
 import { TrialExpiredScreen } from "@/components/subscription/trial-expired-screen";
-// import { TrialBanner } from "@/components/subscription/trial-banner";
+import { TrialBanner } from "@/components/subscription/trial-banner";
 import { Loader2 } from "lucide-react";
 
 export function RootLayout() {
   const { user } = useAuth();
   const { trialStatus, isSubscribed, loading } = useSubscription();
+  console.log('trialStatus=', trialStatus);
+
+  console.log('isSubscribed=', isSubscribed);
+  console.log('loading=', loading);
 
   // Show loading while checking subscription/trial status
   if (user && loading) {
@@ -31,11 +35,11 @@ export function RootLayout() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        {/* Trial banner hidden for now - uncomment to show upgrade option during trial */}
-        {/* {user && trialStatus?.isInTrial && (
+        {/* Show trial banner when less than 2 days remaining */}
+        {user && trialStatus?.isInTrial && trialStatus.daysRemaining < 2 && (
           <TrialBanner daysRemaining={trialStatus.daysRemaining} />
-        )} */}
-        <header className="flex h-14 shrink-0 items-center justify-between gap-2 border-b px-4">
+        )}
+        <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between gap-2 border-b bg-background px-4">
           <div className="flex items-center gap-2">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />

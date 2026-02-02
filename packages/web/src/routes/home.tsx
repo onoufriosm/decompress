@@ -112,7 +112,7 @@ function VideoCard({ video, showSummary = false }: VideoCardProps) {
         <div className="flex-1 p-4">
           <div className="flex items-start justify-between gap-2 mb-2">
             <Link to={`/videos/${video.video_id}`} className="flex-1">
-              <h3 className="font-semibold line-clamp-2 hover:text-primary transition-colors">
+              <h3 className="font-semibold hover:text-primary transition-colors">
                 {video.video_title}
               </h3>
             </Link>
