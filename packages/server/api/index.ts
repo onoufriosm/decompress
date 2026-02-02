@@ -1,10 +1,10 @@
 import { Hono } from "hono";
 import { handle } from "hono/vercel";
 import { cors } from "hono/cors";
-import chat from "../src/routes/chat.js";
-import threads from "../src/routes/threads.js";
-import digest from "../src/routes/digest.js";
-import channels from "../src/routes/channels.js";
+import chat from "../dist/routes/chat.js";
+import threads from "../dist/routes/threads.js";
+import digest from "../dist/routes/digest.js";
+import channels from "../dist/routes/channels.js";
 
 const app = new Hono().basePath("/api");
 
