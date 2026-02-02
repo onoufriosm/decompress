@@ -189,7 +189,6 @@ interface ChannelGroupProps {
 
 function ChannelGroup({ source, showSummaries }: ChannelGroupProps) {
   const [collapsed, setCollapsed] = useState(false);
-  const summaryCount = source.videos.filter((v) => v.video_summary).length;
 
   return (
     <div className="mb-8">
@@ -234,7 +233,7 @@ export function HomePage() {
   const { favorites, loading: favoritesLoading } = useFavorites();
   const [period, setPeriod] = useState<DigestPeriod>("week");
   const [showSummaries, setShowSummaries] = useState(true);
-  const { videos, videosBySource, summaryCount, totalCount, loading: digestLoading } = useDigest(period);
+  const { videos, videosBySource, totalCount, loading: digestLoading } = useDigest(period);
   const { stats, loading: statsLoading } = useDigestStats();
 
   const isLoading = authLoading || favoritesLoading || digestLoading || statsLoading;
