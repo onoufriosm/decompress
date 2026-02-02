@@ -29,6 +29,17 @@ interface DigestVideoRow {
   source_thumbnail_url: string | null;
 }
 
+// Normalize YouTube thumbnail URLs to use hqdefault.jpg for better email client compatibility
+function normalizeYouTubeThumbnail(url: string | null): string | null {
+  if (!url) return null;
+  // YouTube thumbnail URLs: ensure we use hqdefault.jpg which works well in emails
+  if (url.includes('ytimg.com') || url.includes('youtube.com')) {
+    // Replace various quality suffixes with hqdefault
+    return url.replace(/\/(maxresdefault|sddefault|mqdefault|default|hq720)\.jpg/, '/hqdefault.jpg');
+  }
+  return url;
+}
+
 function groupVideosByChannel(videos: DigestVideoRow[]): ChannelGroup[] {
   const grouped = videos.reduce(
     (acc, video) => {
@@ -37,7 +48,7 @@ function groupVideosByChannel(videos: DigestVideoRow[]): ChannelGroup[] {
         acc[sourceId] = {
           source_id: video.source_id,
           source_name: video.source_name,
-          source_thumbnail_url: video.source_thumbnail_url,
+          source_thumbnail_url: normalizeYouTubeThumbnail(video.source_thumbnail_url),
           videos: [],
         };
       }
@@ -45,7 +56,7 @@ function groupVideosByChannel(videos: DigestVideoRow[]): ChannelGroup[] {
         video_id: video.video_id,
         video_title: video.video_title,
         video_summary: video.video_summary,
-        video_thumbnail_url: video.video_thumbnail_url,
+        video_thumbnail_url: normalizeYouTubeThumbnail(video.video_thumbnail_url),
         video_duration_seconds: video.video_duration_seconds,
         video_published_at: video.video_published_at,
       });
@@ -77,9 +88,10 @@ async function logDigestEmail(
   });
 }
 
-async function updateLastDigestSent(userId: string) {
+async function updateLastDigestSent(userId: string, frequency: DigestFrequency) {
   await supabaseAdmin.rpc("update_last_digest_sent", {
     check_user_id: userId,
+    frequency: frequency,
   });
 }
 
@@ -167,9 +179,9 @@ export async function sendDigestToUser(
     undefined,
     data?.id
   );
-  await updateLastDigestSent(user.user_id);
+  await updateLastDigestSent(user.user_id, frequency);
 
-  console.log(`Sent digest to ${user.email}: ${videos.length} videos`);
+  console.log(`Sent ${frequency} digest to ${user.email}: ${videos.length} videos`);
   return { success: true, videoCount: videos.length };
 }
 

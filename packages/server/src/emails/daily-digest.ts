@@ -14,6 +14,7 @@ import {
   Row,
   Column,
 } from "@react-email/components";
+import { marked } from "marked";
 
 export interface DigestVideo {
   video_id: string;
@@ -51,10 +52,32 @@ function formatDuration(seconds: number | null): string {
   return `${minutes}m`;
 }
 
-function truncateSummary(summary: string | null, maxLength = 150): string {
+// Configure marked for email-safe HTML (no dangerous tags)
+marked.setOptions({
+  gfm: true,
+  breaks: true,
+});
+
+function markdownToHtml(text: string): string {
+  // Convert markdown to HTML, then strip paragraph tags for inline use
+  const html = marked.parse(text, { async: false }) as string;
+  // Remove wrapping <p> tags for cleaner inline display
+  return html.replace(/^<p>|<\/p>$/g, "").trim();
+}
+
+function formatSummary(summary: string | null, frequency: DigestFrequency): string {
   if (!summary) return "";
-  if (summary.length <= maxLength) return summary;
-  return summary.substring(0, maxLength).trim() + "...";
+  // Weekly digest: truncate to snippet
+  // Daily digest: show full summary
+  let text = summary;
+  if (frequency === "weekly") {
+    const maxLength = 150;
+    if (text.length > maxLength) {
+      text = text.substring(0, maxLength).trim() + "...";
+    }
+  }
+  // Convert markdown to HTML
+  return markdownToHtml(text);
 }
 
 const e = React.createElement;
@@ -137,9 +160,10 @@ export function DailyDigestEmail({
                   video.video_duration_seconds ? e(Text, { style: videoDuration },
                     formatDuration(video.video_duration_seconds)
                   ) : null,
-                  video.video_summary ? e(Text, { style: videoSummary },
-                    truncateSummary(video.video_summary)
-                  ) : null
+                  video.video_summary ? e("div", {
+                    style: videoSummary,
+                    dangerouslySetInnerHTML: { __html: formatSummary(video.video_summary, frequency) }
+                  }) : null
                 )
               ]}
             )),
