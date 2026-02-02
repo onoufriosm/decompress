@@ -27,32 +27,8 @@ import {
   ChevronUp,
 } from "lucide-react";
 
-// Hook for scroll-triggered animations
-function useInView(threshold = 0.1) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [isInView, setIsInView] = useState(false);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsInView(true);
-        }
-      },
-      { threshold }
-    );
-
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-
-    return () => observer.disconnect();
-  }, [threshold]);
-
-  return { ref, isInView };
-}
-
-// Animated section wrapper component
+// Animated section wrapper component using CSS-only animations
+// Uses data attributes and CSS to avoid React state updates
 function AnimatedSection({
   children,
   className = "",
@@ -62,17 +38,35 @@ function AnimatedSection({
   className?: string;
   delay?: number;
 }) {
-  const { ref, isInView } = useInView();
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          // Use requestAnimationFrame to batch DOM updates
+          requestAnimationFrame(() => {
+            element.dataset.visible = "true";
+          });
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <div
       ref={ref}
-      className={`transition-all duration-700 ease-out ${className}`}
-      style={{
-        transitionDelay: `${delay}ms`,
-        opacity: isInView ? 1 : 0,
-        transform: isInView ? "translateY(0)" : "translateY(30px)",
-      }}
+      data-visible="false"
+      className={`transition-all duration-700 ease-out opacity-0 translate-y-8 data-[visible=true]:opacity-100 data-[visible=true]:translate-y-0 ${className}`}
+      style={{ transitionDelay: `${delay}ms` }}
     >
       {children}
     </div>
