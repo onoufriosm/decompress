@@ -117,7 +117,7 @@ function DigestPreviewCard({ video }: DigestPreviewCardProps) {
         </div>
 
         {/* Title */}
-        <h3 className="font-semibold text-sm line-clamp-2 mb-2">
+        <h3 className="font-semibold text-sm mb-2">
           {video.video_title}
         </h3>
 
@@ -287,7 +287,7 @@ export function LandingPage() {
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
             Get 5-minute summaries of 2-hour tech podcasts and YouTube interviews.
-            Daily and weekly digests in-app and in your inbox.
+            Daily and weekly digests in your inbox.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <SignInDialog
@@ -505,10 +505,10 @@ export function LandingPage() {
                 <Check className="h-4 w-4 text-green-500" />
                 Personalized channel subscriptions
               </li>
-              <li className="flex items-center gap-2 text-sm">
+              {/* <li className="flex items-center gap-2 text-sm">
                 <Check className="h-4 w-4 text-green-500" />
                 AI chat to ask questions about episodes
-              </li>
+              </li> */}
               <li className="flex items-center gap-2 text-sm">
                 <Check className="h-4 w-4 text-green-500" />
                 Full archive access
