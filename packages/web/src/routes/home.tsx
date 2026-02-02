@@ -211,7 +211,6 @@ function ChannelGroup({ source, showSummaries }: ChannelGroupProps) {
           </Link>
           <p className="text-sm text-muted-foreground">
             {source.videos.length} video{source.videos.length !== 1 ? "s" : ""}
-            {summaryCount > 0 && ` · ${summaryCount} with summaries`}
           </p>
         </div>
         <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -280,12 +279,6 @@ export function HomePage() {
           {totalCount > 0 && (
             <div className="text-sm text-muted-foreground">
               <span className="font-medium text-foreground">{totalCount}</span> videos
-              {summaryCount > 0 && (
-                <>
-                  {" · "}
-                  <span className="font-medium text-purple-600">{summaryCount}</span> with summaries
-                </>
-              )}
             </div>
           )}
           <Button

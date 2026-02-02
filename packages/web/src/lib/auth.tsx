@@ -31,9 +31,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+      // Only update state if values actually changed to prevent unnecessary re-renders
+      setSession((prev) =>
+        prev?.access_token === session?.access_token ? prev : session
+      );
+      setUser((prev) =>
+        prev?.id === session?.user?.id ? prev : (session?.user ?? null)
+      );
 
       // Identify user in PostHog when they sign in
       if (event === "SIGNED_IN" && session?.user) {

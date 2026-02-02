@@ -181,7 +181,7 @@ function DigestPreview() {
         </Badge>
         <h2 className="text-3xl font-bold mb-4">Today's digest</h2>
         <p className="text-muted-foreground max-w-xl mx-auto">
-          Here's what we summarized in the last 24 hours. No signup required to browse.
+          Here's what we summarized in the last 24 hours.
         </p>
       </div>
 
@@ -287,7 +287,7 @@ export function LandingPage() {
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
             Get 5-minute summaries of 2-hour tech podcasts and YouTube interviews.
-            Daily and weekly digests delivered to your inbox.
+            Daily and weekly digests in-app and in your inbox.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <SignInDialog
