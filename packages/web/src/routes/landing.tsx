@@ -257,9 +257,16 @@ export function LandingPage() {
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <img src="/logo.png" alt="Decompress" className="h-8 w-8" />
-            <span className="font-bold text-xl">Decompress</span>
+            <span className="font-bold text-xl hidden sm:inline">Decompress</span>
           </Link>
           <div className="flex items-center gap-2 sm:gap-4">
+            <SignInDialog
+              trigger={
+                <Button variant="ghost" className="px-2 sm:px-4">
+                  Sign In
+                </Button>
+              }
+            />
             <SignInDialog
               trigger={<Button className="px-2 sm:px-4">Start Free Trial</Button>}
             />
@@ -272,7 +279,7 @@ export function LandingPage() {
         <div className="text-center max-w-3xl mx-auto">
           <Badge variant="secondary" className="mb-6">
             <Headphones className="h-3 w-3 mr-1" />
-            a16z · 20VC · All-In · Lex Fridman · and more
+            a16z · 20VC · All-In · Lenny's Podcast · and more
           </Badge>
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
             <span>All the best ideas from tech podcasts.</span>{" "}
