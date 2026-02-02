@@ -1,4 +1,5 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import { Home, Video, Radio, Star, Users } from "lucide-react";
 import {
   Sidebar,
@@ -10,6 +11,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/lib/auth";
@@ -56,6 +58,13 @@ function getInitials(name: string): string {
 export function AppSidebar() {
   const { user } = useAuth();
   const { favorites } = useFavorites();
+  const { setOpenMobile } = useSidebar();
+  const location = useLocation();
+
+  // Close mobile sidebar when navigating to a new page
+  useEffect(() => {
+    setOpenMobile(false);
+  }, [location.pathname, setOpenMobile]);
 
   return (
     <Sidebar>
