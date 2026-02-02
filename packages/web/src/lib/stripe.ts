@@ -6,5 +6,5 @@ export const stripePromise = stripePublishableKey
   ? loadStripe(stripePublishableKey)
   : null;
 
-export const SUBSCRIPTION_PRICE = 9.99;
+export const SUBSCRIPTION_PRICE = 4.99;
 export const MONTHLY_TOKEN_LIMIT_USD = 4.0;
