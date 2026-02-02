@@ -92,12 +92,11 @@ export async function sendDigestToUser(
   error?: string;
 }> {
   const baseUrl = process.env.APP_URL || "https://decompress.app";
-  const hoursBack = frequency === "weekly" ? 168 : 24; // 7 days or 1 day
 
-  // 1. Fetch videos for this user (from favorited channels, or all if no favorites)
+  // 1. Fetch videos for this user using calendar days (yesterday for daily, last 7 days for weekly)
   const { data: videos, error: videosError } = await supabaseAdmin.rpc(
     "get_digest_videos",
-    { check_user_id: user.user_id, hours_back: hoursBack }
+    { check_user_id: user.user_id, frequency }
   );
 
   if (videosError) {
@@ -137,7 +136,7 @@ export async function sendDigestToUser(
     };
   }
 
-  const periodLabel = frequency === "weekly" ? "this week" : "today";
+  const periodLabel = frequency === "weekly" ? "this week" : "yesterday";
   const { data, error } = await resend.emails.send({
     from: `${RESEND_FROM_NAME} <${RESEND_FROM_EMAIL}>`,
     to: user.email,

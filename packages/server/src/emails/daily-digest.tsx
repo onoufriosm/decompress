@@ -63,7 +63,7 @@ export function DailyDigestEmail({
   baseUrl,
   frequency = "daily",
 }: DailyDigestEmailProps) {
-  const periodLabel = frequency === "weekly" ? "this week" : "today";
+  const periodLabel = frequency === "weekly" ? "this week" : "yesterday";
   const digestLabel = frequency === "weekly" ? "Weekly" : "Daily";
   const previewText = `${totalVideos} new video${totalVideos === 1 ? "" : "s"} ${periodLabel}`;
 
