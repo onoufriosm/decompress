@@ -1,8 +1,24 @@
-import { StrictMode } from "react";
+import { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import { PostHogProvider } from "posthog-js/react";
+import { createBrowserRouter, RouterProvider, useLocation, Outlet } from "react-router-dom";
+import { PostHogProvider, usePostHog } from "posthog-js/react";
 import "./index.css";
+
+// Track pageviews on route changes (since auto-capture is disabled)
+function PostHogPageviewTracker() {
+  const location = useLocation();
+  const posthog = usePostHog();
+
+  useEffect(() => {
+    if (posthog) {
+      posthog.capture("$pageview", {
+        $current_url: window.location.href,
+      });
+    }
+  }, [location.pathname, posthog]);
+
+  return <Outlet />;
+}
 
 import { AuthProvider } from "./lib/auth";
 import { FavoritesProvider } from "./lib/use-favorites";
@@ -23,65 +39,71 @@ import { TermsPage } from "./routes/terms";
 import { PrivacyPage } from "./routes/privacy";
 
 const router = createBrowserRouter([
-  // Public route - landing page (redirects to /home if authenticated)
+  // Wrap all routes with pageview tracker
   {
-    path: "/",
-    element: <LandingPage />,
-  },
-  // Auth callback (must be accessible without auth)
-  {
-    path: "/auth/callback",
-    element: <AuthCallbackPage />,
-  },
-  // Public pages
-  {
-    path: "/terms",
-    element: <TermsPage />,
-  },
-  {
-    path: "/privacy",
-    element: <PrivacyPage />,
-  },
-  // Protected routes - require authentication
-  {
-    element: <ProtectedRoute />,
+    element: <PostHogPageviewTracker />,
     children: [
+      // Public route - landing page (redirects to /home if authenticated)
       {
-        element: <RootLayout />,
+        path: "/",
+        element: <LandingPage />,
+      },
+      // Auth callback (must be accessible without auth)
+      {
+        path: "/auth/callback",
+        element: <AuthCallbackPage />,
+      },
+      // Public pages
+      {
+        path: "/terms",
+        element: <TermsPage />,
+      },
+      {
+        path: "/privacy",
+        element: <PrivacyPage />,
+      },
+      // Protected routes - require authentication
+      {
+        element: <ProtectedRoute />,
         children: [
           {
-            path: "home",
-            element: <HomePage />,
+            element: <RootLayout />,
+            children: [
+              {
+                path: "home",
+                element: <HomePage />,
+              },
+              {
+                path: "videos",
+                element: <VideosPage />,
+              },
+              {
+                path: "videos/:id",
+                element: <VideoDetailPage />,
+              },
+              {
+                path: "channels",
+                element: <ChannelsPage />,
+              },
+              {
+                path: "channels/:id",
+                element: <ChannelDetailPage />,
+              },
+              {
+                path: "people",
+                element: <PeoplePage />,
+              },
+              {
+                path: "people/:id",
+                element: <PersonDetailPage />,
+              },
+              // AI Chat hidden until Stripe integration is complete
+              // {
+              //   path: "chat",
+              //   element: <ChatPage />,
+              // },
+            ],
           },
-          {
-            path: "videos",
-            element: <VideosPage />,
-          },
-          {
-            path: "videos/:id",
-            element: <VideoDetailPage />,
-          },
-          {
-            path: "channels",
-            element: <ChannelsPage />,
-          },
-          {
-            path: "channels/:id",
-            element: <ChannelDetailPage />,
-          },
-          {
-            path: "people",
-            element: <PeoplePage />,
-          },
-          {
-            path: "people/:id",
-            element: <PersonDetailPage />,
-          },
-          // AI Chat hidden until Stripe integration is complete
-          // {
-          //   path: "chat",
-          //   element: <ChatPage />,
-          // },
         ],
       },
     ],
@@ -97,6 +119,7 @@ createRoot(document.getElementById("root")!).render(
         defaults: "2025-05-24",
         capture_exceptions: true,
         debug: import.meta.env.MODE === "development",
+        capture_pageview: false, // Disable auto-capture to prevent re-renders on tab focus
       }}
     >
       <AuthProvider>
