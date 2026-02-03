@@ -67,14 +67,17 @@ function markdownToHtml(text: string): string {
 
 function formatSummary(summary: string | null, frequency: DigestFrequency): string {
   if (!summary) return "";
-  // Weekly digest: truncate to snippet
+  // Weekly digest: show only the summary section (before "Key Points:")
   // Daily digest: show full summary
   let text = summary;
   if (frequency === "weekly") {
-    const maxLength = 150;
-    if (text.length > maxLength) {
-      text = text.substring(0, maxLength).trim() + "...";
+    // Extract content before "Key Points:" (or similar sections)
+    const keyPointsIndex = text.search(/\*\*Key Points:\*\*|\n##?\s*Key Points/i);
+    if (keyPointsIndex > 0) {
+      text = text.substring(0, keyPointsIndex).trim();
     }
+    // Remove the "**Summary:**" header if present at the start
+    text = text.replace(/^\*\*Summary:\*\*\s*/i, "").trim();
   }
   // Convert markdown to HTML
   return markdownToHtml(text);
@@ -94,7 +97,9 @@ export function DailyDigestEmail({
   const previewText = `${totalVideos} new video${totalVideos === 1 ? "" : "s"} ${periodLabel}`;
 
   return e(Html, null,
-    e(Head, null),
+    e(Head, null,
+      e("style", { dangerouslySetInnerHTML: { __html: summaryStyles } })
+    ),
     e(Preview, null, previewText),
     e(Body, { style: main },
       e(Container, { style: container },
@@ -141,19 +146,18 @@ export function DailyDigestEmail({
             ]}),
             // Videos
             group.videos.map((video) =>
-              e(Row, { key: video.video_id, style: videoRow, children: [
-                video.video_thumbnail_url ? e(Column, { key: "thumb", style: videoThumbnailCol },
-                  e(Link, { href: `${baseUrl}/videos/${video.video_id}` },
-                    e(Img, {
-                      src: video.video_thumbnail_url,
-                      width: "120",
-                      height: "68",
-                      alt: video.video_title,
-                      style: videoThumbnail
-                    })
-                  )
+              e(Section, { key: video.video_id, style: videoSection },
+                // Thumbnail on top (hidden if fails to load via onerror)
+                video.video_thumbnail_url ? e(Link, { href: `${baseUrl}/videos/${video.video_id}`, style: videoThumbnailLink },
+                  e(Img, {
+                    src: video.video_thumbnail_url,
+                    width: "100%",
+                    alt: video.video_title,
+                    style: videoThumbnail
+                  })
                 ) : null,
-                e(Column, { key: "content", style: videoContent },
+                // Content below
+                e("div", { style: videoContent },
                   e(Link, { href: `${baseUrl}/videos/${video.video_id}`, style: videoTitle },
                     video.video_title
                   ),
@@ -161,12 +165,13 @@ export function DailyDigestEmail({
                     formatDuration(video.video_duration_seconds)
                   ) : null,
                   video.video_summary ? e("div", {
+                    className: "video-summary",
                     style: videoSummary,
                     dangerouslySetInnerHTML: { __html: formatSummary(video.video_summary, frequency) }
                   }) : null
                 )
-              ]}
-            )),
+              )
+            ),
             e(Hr, { style: channelDivider })
           )
         ),
@@ -266,22 +271,22 @@ const videoCountText = {
   margin: "4px 0 0",
 };
 
-const videoRow = {
-  marginBottom: "16px",
+const videoSection = {
+  marginBottom: "24px",
 };
 
-const videoThumbnailCol = {
-  width: "128px",
-  verticalAlign: "top" as const,
-  paddingRight: "12px",
+const videoThumbnailLink = {
+  display: "block",
+  marginBottom: "12px",
 };
 
 const videoThumbnail = {
-  borderRadius: "4px",
+  borderRadius: "8px",
+  maxWidth: "100%",
+  height: "auto",
 };
 
 const videoContent = {
-  verticalAlign: "top" as const,
 };
 
 const videoTitle = {
@@ -301,10 +306,36 @@ const videoDuration = {
 
 const videoSummary = {
   color: "#4a4a4a",
-  fontSize: "13px",
-  lineHeight: "1.5",
+  fontSize: "14px",
+  lineHeight: "1.6",
   margin: "8px 0 0",
-};
+} as React.CSSProperties;
+
+// Inline styles for summary content (applied via style tag in Head)
+const summaryStyles = `
+  .video-summary ul, .video-summary ol {
+    margin: 8px 0;
+    padding-left: 0;
+    list-style-position: inside;
+  }
+  .video-summary li {
+    margin: 4px 0;
+    padding-left: 0;
+  }
+  .video-summary h1, .video-summary h2, .video-summary h3,
+  .video-summary h4, .video-summary h5, .video-summary h6 {
+    margin: 12px 0 4px 0;
+    padding: 0;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .video-summary p {
+    margin: 8px 0;
+  }
+  .video-summary strong {
+    font-weight: 600;
+  }
+`;
 
 const channelDivider = {
   borderColor: "#e6ebf1",
