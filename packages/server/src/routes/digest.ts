@@ -7,7 +7,7 @@ const digest = new Hono();
 // Protected by API key or Vercel cron secret
 // Query params:
 //   - frequency: "daily" (default) or "weekly"
-digest.post("/send", async (c) => {
+digest.get("/send", async (c) => {
   const authHeader = c.req.header("Authorization");
   const vercelCronSecret = c.req.header("x-vercel-cron-secret");
   const expectedKey = process.env.DIGEST_API_KEY;
