@@ -9,23 +9,13 @@ const digest = new Hono();
 //   - frequency: "daily" (default) or "weekly"
 digest.get("/send", async (c) => {
   const authHeader = c.req.header("Authorization");
-  const vercelCronSecret = c.req.header("x-vercel-cron-secret");
-  const expectedKey = process.env.DIGEST_API_KEY;
   const expectedCronSecret = process.env.CRON_SECRET;
 
-  // Allow access if:
-  // 1. Valid DIGEST_API_KEY in Authorization header, OR
-  // 2. Valid CRON_SECRET from Vercel cron (set in Vercel dashboard)
-  const isValidApiKey = expectedKey && authHeader === `Bearer ${expectedKey}`;
-  const isValidCronSecret = expectedCronSecret && vercelCronSecret === expectedCronSecret;
+  // Vercel Cron sends: Authorization: Bearer <CRON_SECRET>
+  const isValidCronSecret =
+    expectedCronSecret && authHeader === `Bearer ${expectedCronSecret}`;
 
-  console.log("Auth debug:", {
-    hasExpectedCronSecret: !!expectedCronSecret,
-    hasVercelCronSecret: !!vercelCronSecret,
-    secretsMatch: vercelCronSecret === expectedCronSecret,
-  });
-
-  if (!isValidApiKey && !isValidCronSecret) {
+  if (!isValidCronSecret) {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
