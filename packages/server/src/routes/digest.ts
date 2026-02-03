@@ -19,6 +19,12 @@ digest.get("/send", async (c) => {
   const isValidApiKey = expectedKey && authHeader === `Bearer ${expectedKey}`;
   const isValidCronSecret = expectedCronSecret && vercelCronSecret === expectedCronSecret;
 
+  console.log("Auth debug:", {
+    hasExpectedCronSecret: !!expectedCronSecret,
+    hasVercelCronSecret: !!vercelCronSecret,
+    secretsMatch: vercelCronSecret === expectedCronSecret,
+  });
+
   if (!isValidApiKey && !isValidCronSecret) {
     return c.json({ error: "Unauthorized" }, 401);
   }
