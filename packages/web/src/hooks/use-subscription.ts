@@ -79,12 +79,12 @@ export function useSubscription() {
           trialExpired: daysRemaining === 0 && !isCurrentlySubscribed,
         });
       } else {
-        // No trial_started_at - shouldn't happen after migration
+        // No trial_started_at - don't block the user, treat as having access
         setTrialStatus({
-          isInTrial: false,
+          isInTrial: !isCurrentlySubscribed,
           trialEndDate: null,
-          daysRemaining: 0,
-          trialExpired: true,
+          daysRemaining: TRIAL_DAYS,
+          trialExpired: false,
         });
       }
 

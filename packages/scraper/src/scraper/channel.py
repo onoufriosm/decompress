@@ -35,6 +35,7 @@ VIDEO_METADATA_FIELDS = [
     "tags",
     "categories",
     "url",
+    "live_status",  # is_live, was_live, not_live, is_upcoming
 ]
 
 

@@ -4,10 +4,12 @@ import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, ExternalLink, Clock, Eye, Calendar, Sparkles, Mic, Users, ChevronDown, ChevronUp } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { ArrowLeft, ExternalLink, Clock, Eye, Calendar, Sparkles, Mic, Users, ChevronDown, ChevronUp, MessageSquare } from "lucide-react";
 import { Markdown } from "@/components/Markdown";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { ChatPage } from "./chat";
 
 interface VideoDetail {
   id: string;
@@ -360,9 +362,25 @@ export function VideoDetailPage() {
             </Card>
           )}
 
-          {video.description && (
+          {/* Ask Questions CTA - hidden for now, re-enable later */}
+          {/* <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" className="mb-6 w-full sm:w-auto">
+                <MessageSquare className="mr-2 h-4 w-4" />
+                Ask questions about this video
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-full sm:w-[600px] sm:max-w-[600px] p-0">
+              <SheetHeader className="sr-only">
+                <SheetTitle>Chat about {video.title}</SheetTitle>
+              </SheetHeader>
+              <ChatPage videoId={video.id} />
+            </SheetContent>
+          </Sheet> */}
+
+          {/* {video.description && (
             <ExpandableDescription description={video.description} />
-          )}
+          )} */}
         </div>
 
       </div>

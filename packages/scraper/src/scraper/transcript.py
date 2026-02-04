@@ -200,8 +200,8 @@ PROVIDERS = {
     "youtube_api": fetch_transcript_youtube_api,
 }
 
-# Default provider order: try free youtube_api first, then paid supadata as fallback
-DEFAULT_PROVIDERS = ["youtube_api", "supadata"]
+# Default provider order: try supadata first (more reliable), then youtube_api as fallback
+DEFAULT_PROVIDERS = ["supadata", "youtube_api"]
 
 
 def fetch_transcript(
@@ -215,13 +215,13 @@ def fetch_transcript(
         video_id: YouTube video ID
         providers: List of provider names to try in order.
                    Available: "supadata", "youtube_api"
-                   Default: ["youtube_api", "supadata"] (free first, paid fallback)
+                   Default: ["supadata", "youtube_api"] (supadata first, youtube_api fallback)
 
     Returns:
         TranscriptResult from the first successful provider
 
     Examples:
-        # Use default (youtube_api first, supadata fallback)
+        # Use default (supadata first, youtube_api fallback)
         fetch_transcript("dQw4w9WgXcQ")
 
         # Use only supadata

@@ -73,15 +73,21 @@ function transformVideo(video: VideoWithSource): DigestVideo {
   };
 }
 
-export function useDigest(period: DigestPeriod = "day") {
+export function useDigest(period: DigestPeriod | null = "day") {
   const { favoriteIds, loading: favoritesLoading } = useFavorites();
   const [videos, setVideos] = useState<DigestVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Clear videos when period changes to avoid showing stale data
+  useEffect(() => {
+    setVideos([]);
+    setLoading(true);
+  }, [period]);
+
   const fetchDigest = useCallback(async () => {
-    // Wait for favorites to load first
-    if (favoritesLoading) return;
+    // Wait for favorites to load first and period to be set
+    if (favoritesLoading || period === null) return;
 
     setLoading(true);
     setError(null);

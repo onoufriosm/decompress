@@ -41,20 +41,29 @@ serve(async (req) => {
             session.subscription as string
           );
 
+          const updateData: Record<string, unknown> = {
+            stripe_subscription_id: subscription.id,
+            status: subscription.status,
+            cancel_at_period_end: subscription.cancel_at_period_end,
+          };
+
+          if (subscription.items?.data?.[0]?.price?.id) {
+            updateData.stripe_price_id = subscription.items.data[0].price.id;
+          }
+          if (subscription.current_period_start) {
+            updateData.current_period_start = new Date(
+              subscription.current_period_start * 1000
+            ).toISOString();
+          }
+          if (subscription.current_period_end) {
+            updateData.current_period_end = new Date(
+              subscription.current_period_end * 1000
+            ).toISOString();
+          }
+
           await supabase
             .from("subscriptions")
-            .update({
-              stripe_subscription_id: subscription.id,
-              stripe_price_id: subscription.items.data[0].price.id,
-              status: subscription.status,
-              current_period_start: new Date(
-                subscription.current_period_start * 1000
-              ).toISOString(),
-              current_period_end: new Date(
-                subscription.current_period_end * 1000
-              ).toISOString(),
-              cancel_at_period_end: subscription.cancel_at_period_end,
-            })
+            .update(updateData)
             .eq("stripe_customer_id", session.customer);
         }
         break;
@@ -63,19 +72,29 @@ serve(async (req) => {
       case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription;
 
+        const updateData: Record<string, unknown> = {
+          status: subscription.status,
+          cancel_at_period_end: subscription.cancel_at_period_end,
+        };
+
+        // Only update these if they exist
+        if (subscription.items?.data?.[0]?.price?.id) {
+          updateData.stripe_price_id = subscription.items.data[0].price.id;
+        }
+        if (subscription.current_period_start) {
+          updateData.current_period_start = new Date(
+            subscription.current_period_start * 1000
+          ).toISOString();
+        }
+        if (subscription.current_period_end) {
+          updateData.current_period_end = new Date(
+            subscription.current_period_end * 1000
+          ).toISOString();
+        }
+
         await supabase
           .from("subscriptions")
-          .update({
-            status: subscription.status,
-            stripe_price_id: subscription.items.data[0].price.id,
-            current_period_start: new Date(
-              subscription.current_period_start * 1000
-            ).toISOString(),
-            current_period_end: new Date(
-              subscription.current_period_end * 1000
-            ).toISOString(),
-            cancel_at_period_end: subscription.cancel_at_period_end,
-          })
+          .update(updateData)
           .eq("stripe_subscription_id", subscription.id);
         break;
       }

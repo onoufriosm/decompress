@@ -4,13 +4,14 @@
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-    INSERT INTO public.profiles (id, email, full_name, avatar_url, daily_digest_enabled)
+    INSERT INTO public.profiles (id, email, full_name, avatar_url, trial_started_at, daily_digest_enabled)
     VALUES (
         NEW.id,
         NEW.email,
         NEW.raw_user_meta_data->>'full_name',
         NEW.raw_user_meta_data->>'avatar_url',
-        TRUE  -- Enable daily digest by default for new users
+        NOW(),  -- Start 7-day free trial
+        TRUE    -- Enable daily digest by default for new users
     );
     RETURN NEW;
 END;

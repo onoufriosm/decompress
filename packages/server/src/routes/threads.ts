@@ -24,11 +24,26 @@ const addMessageSchema = z.object({
   content: z.string(),
 });
 
-// GET /threads - List user's threads
+// GET /threads - List user's threads (optionally filtered by videoId)
 threads.get("/", requireAuth, async (c) => {
   const user = c.get("user");
+  const videoId = c.req.query("videoId");
 
-  const { data, error } = await supabaseAdmin
+  // If filtering by video, first get thread IDs that have this video
+  let threadIdsToFilter: string[] | null = null;
+  if (videoId) {
+    const { data: threadVideos } = await supabaseAdmin
+      .from("chat_thread_videos")
+      .select("thread_id")
+      .eq("video_id", videoId);
+
+    if (!threadVideos || threadVideos.length === 0) {
+      return c.json([]); // No threads for this video
+    }
+    threadIdsToFilter = threadVideos.map((tv) => tv.thread_id);
+  }
+
+  let query = supabaseAdmin
     .from("chat_threads")
     .select(`
       id,
@@ -37,7 +52,14 @@ threads.get("/", requireAuth, async (c) => {
       updated_at,
       chat_thread_videos(video_id)
     `)
-    .eq("user_id", user.id)
+    .eq("user_id", user.id);
+
+  // Apply video filter if provided
+  if (threadIdsToFilter) {
+    query = query.in("id", threadIdsToFilter);
+  }
+
+  const { data, error } = await query
     .order("updated_at", { ascending: false })
     .limit(50);
 

@@ -75,6 +75,7 @@ function formatRelativeDate(dateString: string | null): string {
 
 export function VideosPage() {
   const [videos, setVideos] = useState<Video[]>([]);
+  const [totalCount, setTotalCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -103,8 +104,25 @@ export function VideosPage() {
         filteredVideoIds.length === 0
       ) {
         setVideos([]);
+        setTotalCount(0);
         setLoading(false);
         return;
+      }
+
+      // Build count query to get total matching videos
+      let countQuery = supabase
+        .from("videos")
+        .select("id", { count: "exact", head: true })
+        .not("thumbnail_url", "is", null);
+
+      if (filteredVideoIds !== null) {
+        countQuery = countQuery.in("id", filteredVideoIds);
+      }
+
+      if (search) {
+        countQuery = countQuery.or(
+          `title.ilike.%${search}%,description.ilike.%${search}%`
+        );
       }
 
       let query = supabase
@@ -139,7 +157,12 @@ export function VideosPage() {
         );
       }
 
-      const { data, error } = await query;
+      const [{ data, error }, { count }] = await Promise.all([
+        query,
+        countQuery,
+      ]);
+
+      setTotalCount(count ?? 0);
 
       if (error) {
         console.error("Error fetching videos:", error);
@@ -210,74 +233,84 @@ export function VideosPage() {
       ) : videos.length === 0 ? (
         <p className="text-muted-foreground">No videos found.</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {videos.map((video) => (
-            <Link key={video.id} to={`/videos/${video.id}`}>
-              <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
-                <div className="relative aspect-video bg-muted">
-                  {video.thumbnail_url ? (
-                    <img
-                      src={video.thumbnail_url}
-                      alt={video.title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                      No thumbnail
-                    </div>
-                  )}
-                  {video.duration_seconds && (
-                    <Badge
-                      variant="secondary"
-                      className="absolute bottom-2 right-2 bg-black/80 text-white"
-                    >
-                      {formatDuration(video.duration_seconds)}
-                    </Badge>
-                  )}
-                </div>
-                <CardContent className="p-3">
-                  <h3 className="font-medium text-sm line-clamp-2 mb-1">
-                    {video.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {video.source?.name}
-                  </p>
-                  {video.people.length > 0 && (
-                    <div className="flex items-center gap-1 mt-2">
-                      <div className="flex -space-x-2">
-                        {video.people.slice(0, 4).map((p) => (
-                          <Avatar key={p.id} className="h-6 w-6 border-2 border-background">
-                            <AvatarImage
-                              src={p.person.photo_url || undefined}
-                              alt={p.person.name}
-                            />
-                            <AvatarFallback className="text-[8px]">
-                              {getInitials(p.person.name)}
-                            </AvatarFallback>
-                          </Avatar>
-                        ))}
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {videos.map((video) => (
+              <Link key={video.id} to={`/videos/${video.id}`}>
+                <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
+                  <div className="relative aspect-video bg-muted">
+                    {video.thumbnail_url ? (
+                      <img
+                        src={video.thumbnail_url}
+                        alt={video.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                        No thumbnail
                       </div>
-                      <span className="text-xs text-muted-foreground ml-1">
-                        {video.people.slice(0, 2).map((p, i) => (
-                          <span key={p.id}>
-                            {i > 0 && ", "}
-                            {p.role === "host" && <Mic className="h-3 w-3 inline mr-0.5" />}
-                            {p.person.name}
-                          </span>
-                        ))}
-                        {video.people.length > 2 && ` +${video.people.length - 2}`}
-                      </span>
-                    </div>
-                  )}
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {video.published_at && formatRelativeDate(video.published_at)}
+                    )}
+                    {video.duration_seconds && (
+                      <Badge
+                        variant="secondary"
+                        className="absolute bottom-2 right-2 bg-black/80 text-white"
+                      >
+                        {formatDuration(video.duration_seconds)}
+                      </Badge>
+                    )}
+                  </div>
+                  <CardContent className="p-3">
+                    <h3 className="font-medium text-sm line-clamp-2 mb-1">
+                      {video.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {video.source?.name}
+                    </p>
+                    {video.people.length > 0 && (
+                      <div className="flex items-center gap-1 mt-2">
+                        <div className="flex -space-x-2">
+                          {video.people.slice(0, 4).map((p) => (
+                            <Avatar key={p.id} className="h-6 w-6 border-2 border-background">
+                              <AvatarImage
+                                src={p.person.photo_url || undefined}
+                                alt={p.person.name}
+                              />
+                              <AvatarFallback className="text-[8px]">
+                                {getInitials(p.person.name)}
+                              </AvatarFallback>
+                            </Avatar>
+                          ))}
+                        </div>
+                        <span className="text-xs text-muted-foreground ml-1">
+                          {video.people.slice(0, 2).map((p, i) => (
+                            <span key={p.id}>
+                              {i > 0 && ", "}
+                              {p.role === "host" && <Mic className="h-3 w-3 inline mr-0.5" />}
+                              {p.person.name}
+                            </span>
+                          ))}
+                          {video.people.length > 2 && ` +${video.people.length - 2}`}
+                        </span>
+                      </div>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {video.published_at && formatRelativeDate(video.published_at)}
 
-                  </p>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+          {totalCount > videos.length && (
+            <div className="mt-8 text-center py-6 border-t">
+              <p className="text-muted-foreground">
+                <span className="font-medium text-foreground">{totalCount - videos.length} more videos</span> available.
+                Use the search above to discover more.
+              </p>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

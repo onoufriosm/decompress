@@ -21,43 +21,39 @@ cd packages/scraper && uv run python video_tasks.py status
 cd packages/scraper && uv run python video_tasks.py fetch-all-transcripts
 ```
 
-## Step 3: Create Summaries (Batch of 5)
+## Step 3: Create Summaries (ONE AT A TIME)
+
+**IMPORTANT**: Process videos ONE AT A TIME to prevent context bleed between transcripts.
 
 ### 3a. Get pending videos:
 ```bash
 cd packages/scraper && uv run python video_tasks.py list-pending --limit 5
 ```
 
-### 3b. Fetch all 5 transcripts in PARALLEL:
+### 3b. For EACH video, complete the full cycle before moving to next:
 
-Call these simultaneously (5 parallel Bash tool calls):
+**Video 1:**
+1. Fetch transcript:
 ```bash
 cd packages/scraper && uv run python video_tasks.py get-transcript <id1>
-cd packages/scraper && uv run python video_tasks.py get-transcript <id2>
-cd packages/scraper && uv run python video_tasks.py get-transcript <id3>
-cd packages/scraper && uv run python video_tasks.py get-transcript <id4>
-cd packages/scraper && uv run python video_tasks.py get-transcript <id5>
 ```
 
-For large transcripts (>50K), save to scratchpad:
+2. Read the transcript output carefully
+
+3. Generate summary using format below (focus ONLY on this video's content)
+
+4. Save summary:
 ```bash
-cat /path/to/output.txt | sed 's/\. /\.\n/g' > $SCRATCHPAD/t1.txt
+cd packages/scraper && uv run python video_tasks.py save-summary "<id1>" "<summary>"
 ```
 
-### 3c. Generate all 5 summaries
+**Video 2:** Repeat steps 1-4 for next video...
 
-Read all transcripts, then generate summaries using the format below.
-
-### 3d. Save all 5 summaries:
-```bash
-cd packages/scraper && uv run python video_tasks.py save-summary "<id1>" "<summary1>"
-cd packages/scraper && uv run python video_tasks.py save-summary "<id2>" "<summary2>"
-# ... etc
-```
-
-### 3e. Repeat until done
+### 3c. Repeat until all videos are processed
 
 ## Summary Format
+
+**IMPORTANT**: Use bold (`**Summary:**`) NOT markdown headers (`## Summary`). Headers render too large.
 
 ```
 **Summary:**

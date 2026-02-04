@@ -305,12 +305,15 @@ def save_summary(video_id: str, summary: str):
     print(f"Saved summary for video {video_id} ({len(summary)} chars)")
 
 
-def sync_new_videos(limit_per_channel: int = 20):
+def sync_new_videos(limit_per_channel: int = 20, new_channel_limit: int = 10):
     """
     Sync new videos from all channels.
 
     Only fetches videos that are more recent than the latest video
     already stored for each channel. Fetches transcripts for new videos.
+
+    For channels with no existing videos (newly added), only fetches the
+    most recent `new_channel_limit` videos to avoid backfilling too much.
     """
     client = get_client()
 
@@ -341,22 +344,25 @@ def sync_new_videos(limit_per_channel: int = 20):
             print(f"  ERROR: Source not found for {channel_handle}")
             continue
 
-        # Get the latest video date for this channel
-        latest_result = (
+        # Get existing video IDs AND the latest video date for this channel
+        existing_result = (
             client.table("videos")
-            .select("published_at")
+            .select("external_id, published_at")
             .eq("source_id", source_id)
             .order("published_at", desc=True)
-            .limit(1)
             .execute()
         )
+        existing_ids = {v["external_id"] for v in existing_result.data}
 
+        # Determine if this is a new channel (no videos) or existing
+        is_new_channel = len(existing_ids) == 0
         latest_date = None
-        if latest_result.data and latest_result.data[0].get("published_at"):
-            latest_date = latest_result.data[0]["published_at"][:10]  # YYYY-MM-DD
+
+        if not is_new_channel and existing_result.data[0].get("published_at"):
+            latest_date = existing_result.data[0]["published_at"][:10]  # YYYY-MM-DD
             print(f"  Latest video in DB: {latest_date}")
         else:
-            print(f"  No videos in DB for this channel")
+            print(f"  No videos in DB for this channel (new channel)")
 
         channel_url = f"https://www.youtube.com/{channel_handle}"
 
@@ -371,25 +377,32 @@ def sync_new_videos(limit_per_channel: int = 20):
             # Filter: duration >= 20 min
             videos = [v for v in videos if (v.get("duration") or 0) >= MIN_DURATION_SECONDS]
 
-            # Filter: only videos newer than the latest in DB
+            # Find new videos: iterate in order (newest first from YouTube) and stop
+            # when we hit an existing video. This ensures we only get truly NEW videos,
+            # not old videos that were never synced.
             new_videos = []
-            if latest_date:
-                for v in videos:
-                    upload_date = v.get("upload_date")
-                    if upload_date and len(upload_date) == 8:
-                        video_date = f"{upload_date[:4]}-{upload_date[4:6]}-{upload_date[6:8]}"
-                        if video_date > latest_date:
-                            new_videos.append(v)
-                new_videos = new_videos[:limit_per_channel]
+            for v in videos:
+                if v.get("id") in existing_ids:
+                    # Hit an existing video - all subsequent videos are older, stop here
+                    break
+                new_videos.append(v)
+
+            # For new channels: only take the most recent N videos (avoid backfilling)
+            # For existing channels: take up to limit_per_channel new videos
+            if is_new_channel:
+                # New channel: only get the last few videos
+                new_videos = new_videos[:new_channel_limit]
+                print(f"  {len(videos)} videos found, taking {len(new_videos)} most recent (new channel)")
             else:
-                # No videos in DB for this channel, take the most recent ones
-                new_videos = videos[:limit_per_channel]
+                # Existing channel: limit to most recent N new videos
+                new_videos = new_videos[:limit_per_channel]
 
             if not new_videos:
                 print(f"  {len(videos)} videos found, 0 new")
                 continue
 
-            print(f"  {len(videos)} videos found, {len(new_videos)} new")
+            if not is_new_channel:
+                print(f"  {len(videos)} videos found, {len(new_videos)} new")
 
             # Process each new video
             for video in new_videos:
@@ -403,6 +416,12 @@ def sync_new_videos(limit_per_channel: int = 20):
                     video.update(metadata)
                 except Exception as e:
                     print(f"    ✗ metadata failed: {e}")
+
+                # Skip live/upcoming videos (no transcript available)
+                live_status = video.get("live_status")
+                if live_status in ("is_live", "is_upcoming"):
+                    print(f"    - skipping: {live_status}")
+                    continue
 
                 # Fetch transcript
                 transcript_result = fetch_transcript(video_id)
@@ -445,7 +464,6 @@ def sync_new_videos(limit_per_channel: int = 20):
                     db_video["transcript_scraped_at"] = now
 
                 client.table("videos").insert(db_video).execute()
-                existing_ids.add(video_id)  # Track so we don't re-add
                 total_new += 1
 
         except Exception as e:
@@ -466,7 +484,8 @@ def main():
 
     # sync-new command
     sync_parser = subparsers.add_parser("sync-new", help="Sync new videos from all channels")
-    sync_parser.add_argument("--limit", type=int, default=20, help="Max new videos per channel")
+    sync_parser.add_argument("--limit", type=int, default=20, help="Max new videos per existing channel")
+    sync_parser.add_argument("--new-channel-limit", type=int, default=10, help="Max videos for newly added channels")
 
     # next-transcript command
     subparsers.add_parser("next-transcript", help="Get next video needing transcript")
@@ -500,7 +519,7 @@ def main():
     if args.command == "status":
         get_status()
     elif args.command == "sync-new":
-        sync_new_videos(args.limit)
+        sync_new_videos(args.limit, args.new_channel_limit)
     elif args.command == "next-transcript":
         get_next_transcript()
     elif args.command == "fetch-transcript":

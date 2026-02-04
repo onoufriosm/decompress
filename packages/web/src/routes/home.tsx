@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -231,21 +231,20 @@ function ChannelGroup({ source, showSummaries }: ChannelGroupProps) {
 export function HomePage() {
   const { loading: authLoading } = useAuth();
   const { favorites, loading: favoritesLoading } = useFavorites();
-  const [period, setPeriod] = useState<DigestPeriod>("week");
+  // Start with null period until stats tell us which tab to show
+  const [period, setPeriod] = useState<DigestPeriod | null>(null);
   const [showSummaries, setShowSummaries] = useState(true);
-  const { videos, videosBySource, totalCount, loading: digestLoading } = useDigest(period);
   const { stats, loading: statsLoading } = useDigestStats();
-  const hasSetInitialPeriod = useRef(false);
 
-  // Set default tab to "day" if there are daily videos, otherwise "week"
+  // Set initial period based on whether there are daily videos
   useEffect(() => {
-    if (!statsLoading && !hasSetInitialPeriod.current) {
-      hasSetInitialPeriod.current = true;
-      if (stats.videos_today > 0) {
-        setPeriod("day");
-      }
+    if (!statsLoading && period === null) {
+      setPeriod(stats.videos_today > 0 ? "day" : "week");
     }
-  }, [statsLoading, stats.videos_today]);
+  }, [statsLoading, stats.videos_today, period]);
+
+  // Only fetch digest once we know which period to use (useDigest handles null)
+  const { videos, videosBySource, totalCount, loading: digestLoading } = useDigest(period);
 
   const isLoading = authLoading || favoritesLoading || digestLoading || statsLoading;
   return (
@@ -261,7 +260,7 @@ export function HomePage() {
       {/* Stats & Period Toggle */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-4">
-          <Tabs value={period} onValueChange={(v) => setPeriod(v as DigestPeriod)}>
+          <Tabs value={period ?? "week"} onValueChange={(v) => setPeriod(v as DigestPeriod)}>
             <TabsList>
               <TabsTrigger value="day" className="gap-2">
                 <Calendar className="h-4 w-4" />

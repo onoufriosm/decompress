@@ -5,12 +5,14 @@ Fetch new videos from all YouTube channels and add them to the database with tra
 ## What it does
 
 1. Reads all channels from `channels.json`
-2. For each channel, finds the latest video date already in the database
-3. Fetches recent videos from YouTube
-4. **Only adds videos newer than the latest stored video** for that channel
-5. Filters out short videos (< 20 minutes)
-6. Fetches metadata and transcripts for each new video
-7. Saves to the database
+2. For each channel, checks which videos already exist in the database
+3. Fetches recent videos from YouTube (sorted by most recent first)
+4. **Only adds videos not already in the database**
+5. For **new channels** (no existing videos): limits to the **last 10 videos** only
+6. For **existing channels**: limits to the most recent N new videos (default: 20)
+7. Filters out short videos (< 20 minutes)
+8. Fetches metadata and transcripts for each new video
+9. Saves to the database
 
 ## Usage
 
@@ -20,10 +22,18 @@ cd packages/scraper && uv run python video_tasks.py sync-new
 
 ### Options
 
-- `--limit N` - Max new videos per channel (default: 20)
+- `--limit N` - Max new videos per existing channel (default: 20)
+- `--new-channel-limit N` - Max videos for newly added channels (default: 10)
 
 ```bash
+# Sync with defaults
+cd packages/scraper && uv run python video_tasks.py sync-new
+
+# Limit to 5 new videos per existing channel
 cd packages/scraper && uv run python video_tasks.py sync-new --limit 5
+
+# For new channels, only get the last 5 videos
+cd packages/scraper && uv run python video_tasks.py sync-new --new-channel-limit 5
 ```
 
 ## Example Output
@@ -43,9 +53,15 @@ Channels: 12
 --- a16z (@a16z) ---
   32 videos found, 0 new
 
+--- NewPodcast (@newpodcast) ---
+  No videos in DB for this channel (new channel)
+  50 videos found, taking 10 most recent (new channel)
+  + Latest Episode...
+    ✓ transcript (32000 chars)
+
 === COMPLETE ===
-New videos added: 3
-Transcripts fetched: 3
+New videos added: 12
+Transcripts fetched: 12
 ```
 
 ## When to Use
@@ -54,6 +70,7 @@ Use this command when you want to:
 - Add latest videos from all channels
 - Keep the database up to date with new content
 - Avoid re-processing existing videos
+- Add a new channel without backfilling its entire history
 
 ## Related Commands
 
