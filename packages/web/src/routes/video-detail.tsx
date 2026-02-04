@@ -4,12 +4,10 @@ import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { ArrowLeft, ExternalLink, Clock, Eye, Calendar, Sparkles, Mic, Users, ChevronDown, ChevronUp, MessageSquare } from "lucide-react";
+import { ArrowLeft, ExternalLink, Clock, Eye, Calendar, Sparkles, Mic, Users } from "lucide-react";
 import { Markdown } from "@/components/Markdown";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ChatPage } from "./chat";
 
 interface VideoDetail {
   id: string;
@@ -63,51 +61,6 @@ function formatDuration(seconds: number | null): string {
 function formatNumber(num: number | null): string {
   if (!num) return "0";
   return num.toLocaleString();
-}
-
-const MAX_DESCRIPTION_LINES = 10;
-
-function ExpandableDescription({ description }: { description: string }) {
-  const [expanded, setExpanded] = useState(false);
-
-  const lines = description.split('\n');
-  const needsTruncation = lines.length > MAX_DESCRIPTION_LINES;
-  const truncatedDescription = needsTruncation
-    ? lines.slice(0, MAX_DESCRIPTION_LINES).join('\n')
-    : description;
-
-  return (
-    <Card className="mb-6">
-      <CardHeader>
-        <CardTitle className="text-lg">Description</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="text-sm leading-relaxed">
-          <Markdown>{expanded ? description : truncatedDescription}</Markdown>
-        </div>
-        {needsTruncation && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setExpanded(!expanded)}
-            className="mt-2 p-0 h-auto text-muted-foreground hover:text-foreground"
-          >
-            {expanded ? (
-              <>
-                <ChevronUp className="h-4 w-4 mr-1" />
-                Show less
-              </>
-            ) : (
-              <>
-                <ChevronDown className="h-4 w-4 mr-1" />
-                Show more
-              </>
-            )}
-          </Button>
-        )}
-      </CardContent>
-    </Card>
-  );
 }
 
 function formatRelativeDate(dateString: string | null): string {

@@ -133,11 +133,9 @@ describe('Home page tab sync with digest data', () => {
     // 3. period is set to 'day'
     // 4. only then should digest be fetched with 'day' cutoff
 
-    let period: 'day' | 'week' | null = null;
-
     const { rerender } = renderHook(
-      ({ p }) => useDigest(p),
-      { initialProps: { p: period } }
+      ({ p }: { p: 'day' | 'week' | null }) => useDigest(p),
+      { initialProps: { p: null as 'day' | 'week' | null } }
     );
 
     // Wait a bit - no fetch should happen when period is null
@@ -145,8 +143,7 @@ describe('Home page tab sync with digest data', () => {
     expect(mockQuery.select).not.toHaveBeenCalled();
 
     // Simulate stats loading complete and setting period to 'day'
-    period = 'day';
-    rerender({ p: period });
+    rerender({ p: 'day' });
 
     await waitFor(() => {
       expect(mockQuery.select).toHaveBeenCalled();
@@ -182,11 +179,10 @@ describe('Home page tab sync with digest data', () => {
 
     mockQuery = createMockQuery({ data: weekVideos, error: null });
 
-    let period: 'day' | 'week' | null = 'week';
-
+    type Period = 'day' | 'week' | null;
     const { result, rerender } = renderHook(
-      ({ p }) => useDigest(p),
-      { initialProps: { p: period } }
+      ({ p }: { p: Period }) => useDigest(p),
+      { initialProps: { p: 'week' as Period } }
     );
 
     // Wait for week data to load
@@ -196,8 +192,7 @@ describe('Home page tab sync with digest data', () => {
 
     // Now switch to day - videos should be cleared immediately
     mockQuery = createMockQuery({ data: [], error: null });
-    period = 'day';
-    rerender({ p: period });
+    rerender({ p: 'day' as Period });
 
     // The useEffect that clears videos runs synchronously on period change
     // Videos should be cleared (loading state)
