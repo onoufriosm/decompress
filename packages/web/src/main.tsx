@@ -10,6 +10,9 @@ function PostHogPageviewTracker() {
   const posthog = usePostHog();
 
   useEffect(() => {
+    // Scroll to top on navigation (important for mobile)
+    window.scrollTo(0, 0);
+
     if (posthog) {
       posthog.capture("$pageview", {
         $current_url: window.location.href,

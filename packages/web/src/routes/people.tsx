@@ -31,8 +31,11 @@ function getInitials(name: string): string {
     .slice(0, 2);
 }
 
+const PAGE_LIMIT = 50;
+
 export function PeoplePage() {
   const [people, setPeople] = useState<Person[]>([]);
+  const [totalCount, setTotalCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<TabFilter>("all");
@@ -56,6 +59,7 @@ export function PeoplePage() {
       const { data: peopleData, error: peopleError } = await supabase
         .from("people")
         .select("*")
+        .order("photo_url", { nullsFirst: false })
         .order("name", { ascending: true });
 
       if (peopleError) {
@@ -112,12 +116,16 @@ export function PeoplePage() {
         );
       }
 
-      // Sort by total appearances (hosts + guests)
-      enrichedPeople.sort(
-        (a, b) => b.host_count + b.guest_count - (a.host_count + a.guest_count)
-      );
+      // Sort by photo first (from DB), then by total appearances (hosts + guests)
+      enrichedPeople.sort((a, b) => {
+        const aHasPhoto = a.photo_url ? 1 : 0;
+        const bHasPhoto = b.photo_url ? 1 : 0;
+        if (bHasPhoto !== aHasPhoto) return bHasPhoto - aHasPhoto;
+        return b.host_count + b.guest_count - (a.host_count + a.guest_count);
+      });
 
-      setPeople(enrichedPeople);
+      setTotalCount(enrichedPeople.length);
+      setPeople(enrichedPeople.slice(0, PAGE_LIMIT));
       setLoading(false);
     }
 
@@ -165,49 +173,60 @@ export function PeoplePage() {
       ) : filteredPeople.length === 0 ? (
         <p className="text-muted-foreground">No people found.</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredPeople.map((person) => (
-            <Link key={person.id} to={`/people/${person.id}`}>
-              <Card className="p-4 hover:shadow-lg transition-shadow h-full">
-                <div className="flex items-start gap-4">
-                  <Avatar className="h-16 w-16">
-                    <AvatarImage
-                      src={person.photo_url || undefined}
-                      alt={person.name}
-                    />
-                    <AvatarFallback>{getInitials(person.name)}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold truncate hover:underline">
-                      {person.name}
-                    </h3>
-                    <div className="flex flex-wrap items-center gap-2 mt-2">
-                      {person.host_count > 0 && (
-                        <Badge variant="default" className="text-xs">
-                          <Mic className="h-3 w-3 mr-1" />
-                          Host of {person.host_count} channel
-                          {person.host_count !== 1 ? "s" : ""}
-                        </Badge>
-                      )}
-                      {person.guest_count > 0 && (
-                        <Badge variant="secondary" className="text-xs">
-                          <Users className="h-3 w-3 mr-1" />
-                          {person.guest_count} appearance
-                          {person.guest_count !== 1 ? "s" : ""}
-                        </Badge>
-                      )}
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {filteredPeople.map((person) => (
+              <Link key={person.id} to={`/people/${person.id}`}>
+                <Card className="p-4 hover:shadow-lg transition-shadow h-full">
+                  <div className="flex items-start gap-4">
+                    <Avatar className="h-16 w-16">
+                      <AvatarImage
+                        src={person.photo_url || undefined}
+                        alt={person.name}
+                        className="object-cover"
+                      />
+                      <AvatarFallback>{getInitials(person.name)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold truncate hover:underline">
+                        {person.name}
+                      </h3>
+                      <div className="flex flex-wrap items-center gap-2 mt-2">
+                        {person.host_count > 0 && (
+                          <Badge variant="default" className="text-xs">
+                            <Mic className="h-3 w-3 mr-1" />
+                            Host of {person.host_count} channel
+                            {person.host_count !== 1 ? "s" : ""}
+                          </Badge>
+                        )}
+                        {person.guest_count > 0 && (
+                          <Badge variant="secondary" className="text-xs">
+                            <Users className="h-3 w-3 mr-1" />
+                            {person.guest_count} appearance
+                            {person.guest_count !== 1 ? "s" : ""}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-                {person.bio && (
-                  <p className="text-sm text-muted-foreground mt-3 line-clamp-2">
-                    {person.bio}
-                  </p>
-                )}
-              </Card>
-            </Link>
-          ))}
-        </div>
+                  {person.bio && (
+                    <p className="text-sm text-muted-foreground mt-3 line-clamp-2">
+                      {person.bio}
+                    </p>
+                  )}
+                </Card>
+              </Link>
+            ))}
+          </div>
+          {totalCount > filteredPeople.length && (
+            <div className="mt-8 text-center py-6 border-t">
+              <p className="text-muted-foreground">
+                <span className="font-medium text-foreground">{totalCount - filteredPeople.length} more people</span> available.
+                Use the search above to discover more.
+              </p>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
