@@ -195,7 +195,7 @@ export function HomePage() {
   const { favorites, loading: favoritesLoading } = useFavorites();
   // Start with null period until stats tell us which tab to show
   const [period, setPeriod] = useState<DigestPeriod | null>(null);
-  const [showSummaries, setShowSummaries] = useState(true);
+  const [showSummaries, _setShowSummaries] = useState(true);
   const { stats, loading: statsLoading } = useDigestStats();
 
   // Set initial period based on whether there are daily videos
@@ -250,7 +250,7 @@ export function HomePage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setShowSummaries(!showSummaries)}
+            onClick={() => _setShowSummaries(!showSummaries)}
             className={showSummaries ? "bg-purple-50 border-purple-200" : ""}
           >
             <Sparkles className={`h-4 w-4 mr-2 ${showSummaries ? "text-purple-600" : ""}`} />
