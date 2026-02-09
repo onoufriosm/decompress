@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
@@ -10,12 +10,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FilterPanel } from "@/components/filter-panel";
 import { FavoriteButton } from "@/components/favorite-button";
 import { RequestChannelDialog } from "@/components/request-channel-dialog";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Search, Video, Clock } from "lucide-react";
+
+type TabFilter = "all" | "favorites";
 
 interface Channel {
   id: string;
@@ -58,12 +61,72 @@ function getInitials(name: string): string {
 
 export function ChannelsPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [channelRequests, setChannelRequests] = useState<ChannelRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<TabFilter>("favorites");
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [favoritesLoaded, setFavoritesLoaded] = useState(false);
+
+  // Fetch user's favorite channels
+  useEffect(() => {
+    // Wait for auth to finish loading before fetching favorites
+    if (authLoading) return;
+
+    async function fetchFavorites() {
+      if (!user) {
+        setFavoriteIds(new Set());
+        setActiveTab("all");
+        setFavoritesLoaded(true);
+        return;
+      }
+
+      const { data } = await supabase
+        .from("user_favorite_channels")
+        .select("source_id")
+        .eq("user_id", user.id);
+
+      const ids = new Set(data?.map((f) => f.source_id) || []);
+      setFavoriteIds(ids);
+      // Default to "all" if user has no favorites
+      if (ids.size === 0) {
+        setActiveTab("all");
+      }
+      setFavoritesLoaded(true);
+    }
+
+    fetchFavorites();
+
+    // Subscribe to changes in favorites
+    const channel = supabase
+      .channel("favorites-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "user_favorite_channels",
+        },
+        () => {
+          fetchFavorites();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, authLoading]);
+
+  const filteredChannels = useMemo(() => {
+    if (activeTab === "favorites") {
+      return channels.filter((c) => favoriteIds.has(c.id));
+    }
+    return channels;
+  }, [channels, activeTab, favoriteIds]);
 
   useEffect(() => {
     async function fetchChannels() {
@@ -154,6 +217,18 @@ export function ChannelsPage() {
           <h1 className="text-2xl font-bold">Channels</h1>
           <RequestChannelDialog />
         </div>
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => setActiveTab(v as TabFilter)}
+          className="mb-4"
+        >
+          <TabsList>
+            <TabsTrigger value="favorites" disabled={favoritesLoaded && favoriteIds.size === 0}>
+              Favorites
+            </TabsTrigger>
+            <TabsTrigger value="all">All</TabsTrigger>
+          </TabsList>
+        </Tabs>
         <div className="relative max-w-md mb-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -163,6 +238,12 @@ export function ChannelsPage() {
             className="pl-10"
           />
         </div>
+        {!loading && (
+          <p className="text-sm text-muted-foreground mb-4">
+            {filteredChannels.length} {activeTab === "favorites" ? "favorite" : "channel"}
+            {filteredChannels.length !== 1 ? "s" : ""} total
+          </p>
+        )}
         <FilterPanel
           selectedCategories={selectedCategories}
           onCategoriesChange={setSelectedCategories}
@@ -213,11 +294,13 @@ export function ChannelsPage() {
             </Card>
           ))}
         </div>
-      ) : channels.length === 0 ? (
-        <p className="text-muted-foreground">No channels found.</p>
+      ) : filteredChannels.length === 0 ? (
+        <p className="text-muted-foreground">
+          {activeTab === "favorites" ? "No favorite channels yet." : "No channels found."}
+        </p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {channels.map((channel) => (
+          {filteredChannels.map((channel) => (
             <Card
               key={channel.id}
               className="p-4 hover:shadow-lg transition-shadow cursor-pointer"

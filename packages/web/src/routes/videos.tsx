@@ -1,13 +1,18 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/lib/auth";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FilterPanel } from "@/components/filter-panel";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Mic } from "lucide-react";
+
+type DateFilter = "7days" | "30days" | "all";
+type ChannelFilter = "favorites" | "all";
 
 interface VideoPerson {
   id: string;
@@ -74,15 +79,85 @@ function formatRelativeDate(dateString: string | null): string {
 }
 
 export function VideosPage() {
+  const { user, loading: authLoading } = useAuth();
   const [videos, setVideos] = useState<Video[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [dateFilter, setDateFilter] = useState<DateFilter>("7days");
+  const [channelFilter, setChannelFilter] = useState<ChannelFilter>("favorites");
+  const [favoriteSourceIds, setFavoriteSourceIds] = useState<string[]>([]);
+  const [favoritesLoaded, setFavoritesLoaded] = useState(false);
+  const [isSearchingAllTime, setIsSearchingAllTime] = useState(false);
+
+  // Fetch user's favorite channels
+  useEffect(() => {
+    // Wait for auth to finish loading before fetching favorites
+    if (authLoading) return;
+
+    async function fetchFavorites() {
+      if (!user) {
+        setFavoriteSourceIds([]);
+        setChannelFilter("all");
+        setFavoritesLoaded(true);
+        return;
+      }
+
+      const { data } = await supabase
+        .from("user_favorite_channels")
+        .select("source_id")
+        .eq("user_id", user.id);
+
+      const ids = data?.map((f) => f.source_id) || [];
+      setFavoriteSourceIds(ids);
+      // Default to "all" if user has no favorites
+      if (ids.length === 0) {
+        setChannelFilter("all");
+      }
+      setFavoritesLoaded(true);
+    }
+
+    fetchFavorites();
+  }, [user, authLoading]);
+
+  // When search is active, switch to "all" mode for both filters
+  const effectiveDateFilter = search ? "all" : dateFilter;
+  const effectiveChannelFilter = search ? "all" : channelFilter;
+
+  useEffect(() => {
+    setIsSearchingAllTime(!!search);
+  }, [search]);
 
   useEffect(() => {
     async function fetchVideos() {
+      // Wait for favorites to load before fetching
+      if (!favoritesLoaded) return;
+
       setLoading(true);
+
+      // Calculate date filter
+      const getDateFilter = () => {
+        if (effectiveDateFilter === "7days") {
+          const date = new Date();
+          date.setDate(date.getDate() - 7);
+          return date.toISOString();
+        } else if (effectiveDateFilter === "30days") {
+          const date = new Date();
+          date.setDate(date.getDate() - 30);
+          return date.toISOString();
+        }
+        return null;
+      };
+      const dateFilterValue = getDateFilter();
+
+      // If filtering by favorites but no favorites exist, show empty
+      if (effectiveChannelFilter === "favorites" && favoriteSourceIds.length === 0) {
+        setVideos([]);
+        setTotalCount(0);
+        setLoading(false);
+        return;
+      }
 
       // If we have category filters, we need to get the video IDs first
       let filteredVideoIds: string[] | null = null;
@@ -119,6 +194,15 @@ export function VideosPage() {
         countQuery = countQuery.in("id", filteredVideoIds);
       }
 
+      // Apply channel filter (favorites)
+      if (effectiveChannelFilter === "favorites") {
+        countQuery = countQuery.in("source_id", favoriteSourceIds);
+      }
+
+      if (dateFilterValue) {
+        countQuery = countQuery.gte("published_at", dateFilterValue);
+      }
+
       if (search) {
         countQuery = countQuery.or(
           `title.ilike.%${search}%,description.ilike.%${search}%`
@@ -148,6 +232,16 @@ export function VideosPage() {
       // Apply video ID filter from categories
       if (filteredVideoIds !== null) {
         query = query.in("id", filteredVideoIds);
+      }
+
+      // Apply channel filter (favorites)
+      if (effectiveChannelFilter === "favorites") {
+        query = query.in("source_id", favoriteSourceIds);
+      }
+
+      // Apply date filter
+      if (dateFilterValue) {
+        query = query.gte("published_at", dateFilterValue);
       }
 
       // Apply text search
@@ -196,12 +290,35 @@ export function VideosPage() {
 
     const debounce = setTimeout(fetchVideos, 300);
     return () => clearTimeout(debounce);
-  }, [search, selectedCategories]);
+  }, [search, selectedCategories, effectiveDateFilter, effectiveChannelFilter, favoriteSourceIds, favoritesLoaded]);
 
   return (
     <div className="p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold mb-4">Videos</h1>
+        <div className="flex flex-wrap items-center gap-4 mb-4">
+          <Tabs
+            value={effectiveChannelFilter}
+            onValueChange={(v) => setChannelFilter(v as ChannelFilter)}
+          >
+            <TabsList>
+              <TabsTrigger value="favorites" disabled={!!search || (favoritesLoaded && favoriteSourceIds.length === 0)}>
+                Favorite channels
+              </TabsTrigger>
+              <TabsTrigger value="all" disabled={!!search}>All channels</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <Tabs
+            value={effectiveDateFilter}
+            onValueChange={(v) => setDateFilter(v as DateFilter)}
+          >
+            <TabsList>
+              <TabsTrigger value="7days" disabled={!!search}>Last 7 days</TabsTrigger>
+              <TabsTrigger value="30days" disabled={!!search}>Last 30 days</TabsTrigger>
+              <TabsTrigger value="all" disabled={!!search}>All time</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
         <div className="relative max-w-md mb-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -211,6 +328,20 @@ export function VideosPage() {
             className="pl-10"
           />
         </div>
+        {isSearchingAllTime && search && (
+          <p className="text-sm text-muted-foreground mb-4">
+            Searching across all videos
+          </p>
+        )}
+        {!loading && (
+          <p className="text-sm text-muted-foreground mb-4">
+            {totalCount} video{totalCount !== 1 ? "s" : ""}{" "}
+            {effectiveChannelFilter === "favorites" && !search && "from favorite channels "}
+            {effectiveDateFilter === "7days" && "in the last 7 days"}
+            {effectiveDateFilter === "30days" && "in the last 30 days"}
+            {effectiveDateFilter === "all" && !search && "total"}
+          </p>
+        )}
         <FilterPanel
           selectedCategories={selectedCategories}
           onCategoriesChange={setSelectedCategories}

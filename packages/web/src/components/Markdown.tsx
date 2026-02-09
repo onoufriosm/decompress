@@ -88,6 +88,46 @@ const components: Partial<Components> = {
             {children}
         </p>
     ),
+    hr: () => (
+        <hr className="my-6 border-t border-zinc-200 dark:border-zinc-700" />
+    ),
+    table: ({ children, ...props }) => (
+        <div className="my-4 overflow-x-auto">
+            <table className="min-w-full border-collapse text-sm" {...props}>
+                {children}
+            </table>
+        </div>
+    ),
+    thead: ({ children, ...props }) => (
+        <thead className="bg-zinc-100 dark:bg-zinc-800" {...props}>
+            {children}
+        </thead>
+    ),
+    tbody: ({ children, ...props }) => (
+        <tbody className="divide-y divide-zinc-200 dark:divide-zinc-700" {...props}>
+            {children}
+        </tbody>
+    ),
+    tr: ({ children, ...props }) => (
+        <tr className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50" {...props}>
+            {children}
+        </tr>
+    ),
+    th: ({ children, ...props }) => (
+        <th className="px-3 py-2 text-left font-semibold text-zinc-900 dark:text-zinc-100 border-b border-zinc-300 dark:border-zinc-600" {...props}>
+            {children}
+        </th>
+    ),
+    td: ({ children, ...props }) => (
+        <td className="px-3 py-2 text-zinc-700 dark:text-zinc-300" {...props}>
+            {children}
+        </td>
+    ),
+    blockquote: ({ children, ...props }) => (
+        <blockquote className="border-l-4 border-zinc-300 dark:border-zinc-600 pl-4 my-4 italic text-zinc-600 dark:text-zinc-400" {...props}>
+            {children}
+        </blockquote>
+    ),
 };
 
 const remarkPlugins = [remarkGfm];

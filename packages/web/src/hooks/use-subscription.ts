@@ -52,7 +52,7 @@ export function useSubscription() {
         .select("*")
         .eq("user_id", user.id)
         .eq("status", "active")
-        .single();
+        .maybeSingle();
 
       setSubscription(subData);
       const isCurrentlySubscribed = subData?.status === "active";
@@ -62,7 +62,7 @@ export function useSubscription() {
         .from("profiles")
         .select("trial_started_at")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
 
       // Calculate trial status
       if (profile?.trial_started_at) {
@@ -94,7 +94,7 @@ export function useSubscription() {
         .select("*")
         .eq("user_id", user.id)
         .gte("month", new Date().toISOString().slice(0, 7) + "-01")
-        .single();
+        .maybeSingle();
 
       setTokenUsage(usageData);
       setLoading(false);

@@ -13,6 +13,11 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Test mode bypass - only works in development
+const TEST_MODE = import.meta.env.VITE_TEST_MODE === "true";
+const TEST_USER_ID = import.meta.env.VITE_TEST_USER_ID;
+const TEST_USER_EMAIL = import.meta.env.VITE_TEST_USER_EMAIL || "test@example.com";
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -20,12 +25,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const posthog = usePostHog();
 
   useEffect(() => {
+    // Test mode bypass - skip real auth
+    if (TEST_MODE && TEST_USER_ID) {
+      console.warn("⚠️ Running in TEST MODE with bypassed auth");
+      const fakeUser = {
+        id: TEST_USER_ID,
+        email: TEST_USER_EMAIL,
+        created_at: new Date().toISOString(),
+        app_metadata: {},
+        user_metadata: {},
+        aud: "authenticated",
+      } as User;
+      setUser(fakeUser);
+      setSession({ user: fakeUser } as Session);
+      setLoading(false);
+      return;
+    }
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
+
+    // Skip auth listener in test mode
+    if (TEST_MODE && TEST_USER_ID) {
+      return;
+    }
 
     // Listen for auth changes
     const {

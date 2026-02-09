@@ -9,6 +9,12 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distDir = path.join(__dirname, '..', 'dist');
 
+// Pages to pre-render for SEO
+const pagesToPrerender = [
+  { route: '/', output: 'index.html' },
+  { route: '/weekly-digest', output: 'weekly-digest/index.html' },
+];
+
 async function prerender() {
   console.log('Starting prerender...');
 
@@ -24,46 +30,65 @@ async function prerender() {
     headless: true,
   });
 
+  // Use incognito context to ensure no stored auth state
+  const context = await browser.createBrowserContext();
+
   try {
-    const page = await browser.newPage();
+    const page = await context.newPage();
 
-    // Navigate to the landing page
-    console.log('Navigating to landing page...');
-    await page.goto(`http://localhost:${port}/`, {
-      waitUntil: 'networkidle0',
-    });
+    for (const { route, output } of pagesToPrerender) {
+      console.log(`\nPrerendering ${route}...`);
 
-    // Wait for the prerender-ready event or timeout
-    console.log('Waiting for content to load...');
-    await page.evaluate(() => {
-      return new Promise((resolve) => {
-        if (document.readyState === 'complete') {
-          // Wait a bit for React to hydrate and fetch data
-          setTimeout(resolve, 2000);
-        } else {
-          document.addEventListener('prerender-ready', resolve);
-          // Fallback timeout
-          setTimeout(resolve, 5000);
+      // Clear any stored auth state before navigating (Supabase stores tokens in localStorage)
+      await page.evaluate(() => {
+        try {
+          localStorage.clear();
+          sessionStorage.clear();
+        } catch (e) {
+          // Ignore errors if storage is not available
         }
       });
-    });
 
-    // Get the rendered HTML
-    const html = await page.content();
+      // Navigate to the page
+      await page.goto(`http://localhost:${port}${route}`, {
+        waitUntil: 'networkidle0',
+      });
 
-    // Read the original index.html
-    const indexPath = path.join(distDir, 'index.html');
+      // Wait for the prerender-ready event or timeout
+      console.log('Waiting for content to load...');
+      await page.evaluate(() => {
+        return new Promise((resolve) => {
+          if (document.readyState === 'complete') {
+            // Wait a bit for React to hydrate and fetch data
+            setTimeout(resolve, 2000);
+          } else {
+            document.addEventListener('prerender-ready', resolve);
+            // Fallback timeout
+            setTimeout(resolve, 5000);
+          }
+        });
+      });
 
-    // Write the prerendered HTML
-    await fs.writeFile(indexPath, html);
-    console.log('Prerendered landing page saved to index.html');
+      // Get the rendered HTML
+      const html = await page.content();
+
+      // Ensure the output directory exists
+      const outputPath = path.join(distDir, output);
+      const outputDir = path.dirname(outputPath);
+      await fs.mkdir(outputDir, { recursive: true });
+
+      // Write the prerendered HTML
+      await fs.writeFile(outputPath, html);
+      console.log(`Prerendered ${route} saved to ${output}`);
+    }
 
   } finally {
+    await context.close();
     await browser.close();
     server.httpServer.close();
   }
 
-  console.log('Prerender complete!');
+  console.log('\nPrerender complete!');
 }
 
 prerender().catch((err) => {

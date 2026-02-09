@@ -27,11 +27,36 @@ Usage:
 import sys
 import json
 import argparse
+import time
 from pathlib import Path
 from datetime import datetime, timezone
 from src.scraper.db import get_client
 from src.scraper.transcript import fetch_transcript
 from src.scraper.channel import get_channel_video_ids, get_video_metadata
+
+
+def fetch_metadata_with_retry(video_id: str, max_retries: int = 3, base_delay: float = 1.0) -> dict | None:
+    """Fetch video metadata with exponential backoff retry."""
+    for attempt in range(max_retries):
+        try:
+            metadata = get_video_metadata(video_id)
+            # Check if we got meaningful data (thumbnail is a good indicator)
+            if metadata.get("thumbnail"):
+                return metadata
+            # If no thumbnail, treat as partial failure and retry
+            if attempt < max_retries - 1:
+                delay = base_delay * (2 ** attempt)
+                print(f"    ⚠ metadata incomplete, retrying in {delay}s...")
+                time.sleep(delay)
+        except Exception as e:
+            if attempt < max_retries - 1:
+                delay = base_delay * (2 ** attempt)
+                print(f"    ⚠ metadata failed ({e}), retrying in {delay}s...")
+                time.sleep(delay)
+            else:
+                print(f"    ✗ metadata failed after {max_retries} attempts: {e}")
+                return None
+    return metadata if 'metadata' in dir() else None
 
 
 def get_status():
@@ -410,12 +435,13 @@ def sync_new_videos(limit_per_channel: int = 20, new_channel_limit: int = 10):
                 title = video.get("title", "Unknown")[:50]
                 print(f"  + {title}...")
 
-                # Fetch rich metadata
-                try:
-                    metadata = get_video_metadata(video_id)
+                # Fetch rich metadata with retry
+                metadata = fetch_metadata_with_retry(video_id)
+                if metadata:
                     video.update(metadata)
-                except Exception as e:
-                    print(f"    ✗ metadata failed: {e}")
+                else:
+                    print(f"    ✗ skipping video due to metadata failure")
+                    continue
 
                 # Skip live/upcoming videos (no transcript available)
                 live_status = video.get("live_status")
@@ -455,6 +481,8 @@ def sync_new_videos(limit_per_channel: int = 20, new_channel_limit: int = 10):
                 if upload_date and len(upload_date) == 8:
                     db_video["upload_date"] = f"{upload_date[:4]}-{upload_date[4:6]}-{upload_date[6:8]}"
                     db_video["published_at"] = f"{db_video['upload_date']}T00:00:00Z"
+                else:
+                    print(f"    ⚠ WARNING: No upload_date, video will have NULL published_at")
 
                 # Add transcript if available
                 if video.get("transcript"):
@@ -473,6 +501,64 @@ def sync_new_videos(limit_per_channel: int = 20, new_channel_limit: int = 10):
     print(f"=== COMPLETE ===")
     print(f"New videos added: {total_new}")
     print(f"Transcripts fetched: {total_transcripts}")
+
+
+def fix_missing_dates():
+    """
+    Find all videos with NULL published_at and fetch their upload dates from YouTube.
+    """
+    client = get_client()
+
+    # Find videos with missing published_at
+    result = (
+        client.table("videos")
+        .select("id, external_id, title")
+        .is_("published_at", "null")
+        .execute()
+    )
+
+    if not result.data:
+        print("All videos have published_at dates!")
+        return
+
+    print(f"=== FIX MISSING DATES ===")
+    print(f"Found {len(result.data)} videos with NULL published_at")
+    print()
+
+    fixed_count = 0
+    failed_count = 0
+
+    for video in result.data:
+        external_id = video["external_id"]
+        title = video["title"][:50] if video.get("title") else "Unknown"
+        print(f"  {external_id}: {title}...")
+
+        try:
+            metadata = get_video_metadata(external_id)
+            upload_date = metadata.get("upload_date")
+
+            if upload_date and len(upload_date) == 8:
+                formatted_date = f"{upload_date[:4]}-{upload_date[4:6]}-{upload_date[6:8]}"
+                published_at = f"{formatted_date}T00:00:00Z"
+
+                client.table("videos").update({
+                    "upload_date": formatted_date,
+                    "published_at": published_at,
+                }).eq("id", video["id"]).execute()
+
+                print(f"    ✓ Fixed: {formatted_date}")
+                fixed_count += 1
+            else:
+                print(f"    ✗ No upload_date in metadata")
+                failed_count += 1
+        except Exception as e:
+            print(f"    ✗ Error: {e}")
+            failed_count += 1
+
+    print()
+    print(f"=== COMPLETE ===")
+    print(f"Fixed: {fixed_count}")
+    print(f"Failed: {failed_count}")
 
 
 def main():
@@ -514,6 +600,9 @@ def main():
     save_parser.add_argument("video_id", help="Video ID (UUID)")
     save_parser.add_argument("summary", help="Summary text")
 
+    # fix-missing-dates command
+    subparsers.add_parser("fix-missing-dates", help="Fix videos with NULL published_at dates")
+
     args = parser.parse_args()
 
     if args.command == "status":
@@ -534,6 +623,8 @@ def main():
         get_transcript(args.video_id)
     elif args.command == "save-summary":
         save_summary(args.video_id, args.summary)
+    elif args.command == "fix-missing-dates":
+        fix_missing_dates()
     else:
         parser.print_help()
 

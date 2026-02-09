@@ -144,7 +144,7 @@ export function PeoplePage() {
             <TabsTrigger value="guests">Guests</TabsTrigger>
           </TabsList>
         </Tabs>
-        <div className="relative max-w-md">
+        <div className="relative max-w-md mb-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search people..."
@@ -153,6 +153,15 @@ export function PeoplePage() {
             className="pl-10"
           />
         </div>
+        {!loading && (
+          <p className="text-sm text-muted-foreground">
+            {filteredPeople.length}{" "}
+            {activeTab === "hosts" && (filteredPeople.length === 1 ? "host" : "hosts")}
+            {activeTab === "guests" && (filteredPeople.length === 1 ? "guest" : "guests")}
+            {activeTab === "all" && (filteredPeople.length === 1 ? "person" : "people")}
+            {" "}total
+          </p>
+        )}
       </div>
 
       {loading ? (

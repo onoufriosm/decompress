@@ -206,16 +206,18 @@ export function useDigestStats() {
     const weekAgo = getCutoffDate("week");
 
     try {
-      // Build base queries
+      // Build base queries - filter by thumbnail_url to match what useDigest displays
       let todayQuery = supabase
         .from("videos")
         .select("id, summary", { count: "exact", head: false })
-        .gte("published_at", dayAgo);
+        .gte("published_at", dayAgo)
+        .not("thumbnail_url", "is", null);
 
       let weekQuery = supabase
         .from("videos")
         .select("id, summary", { count: "exact", head: false })
-        .gte("published_at", weekAgo);
+        .gte("published_at", weekAgo)
+        .not("thumbnail_url", "is", null);
 
       // Filter by favorites if user has favorited channels
       if (favoriteIds.size > 0) {

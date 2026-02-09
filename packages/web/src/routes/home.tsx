@@ -7,9 +7,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Markdown } from "@/components/Markdown";
+import { WeeklyDigestCard } from "@/components/WeeklyDigestCard";
 import { useAuth } from "@/lib/auth";
 import { useFavorites } from "@/lib/use-favorites";
 import { useDigest, useDigestStats, type DigestPeriod, type DigestVideo } from "@/lib/use-digest";
+import {
+  formatDuration,
+  formatRelativeTime,
+  formatViewCount,
+  getInitials,
+  truncateText,
+} from "@/lib/format-utils";
 import {
   Sparkles,
   Star,
@@ -23,52 +31,6 @@ import {
   Eye,
 } from "lucide-react";
 
-function formatDuration(seconds: number | null): string {
-  if (!seconds) return "";
-  const hrs = Math.floor(seconds / 3600);
-  const mins = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
-  if (hrs > 0) {
-    return `${hrs}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  }
-  return `${mins}:${secs.toString().padStart(2, "0")}`;
-}
-
-function formatRelativeTime(dateString: string | null): string {
-  if (!dateString) return "";
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffHours < 1) return "Just now";
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
-}
-
-function formatViewCount(count: number | null): string {
-  if (!count) return "";
-  if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M views`;
-  if (count >= 1000) return `${(count / 1000).toFixed(1)}K views`;
-  return `${count} views`;
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .map((word) => word[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
-
-function truncateSummary(summary: string, maxLength: number = 300): string {
-  if (summary.length <= maxLength) return summary;
-  return summary.slice(0, maxLength).trim() + "...";
-}
-
 interface VideoCardProps {
   video: DigestVideo;
   showSummary?: boolean;
@@ -77,7 +39,7 @@ interface VideoCardProps {
 function VideoCard({ video, showSummary = false }: VideoCardProps) {
   const [expanded, setExpanded] = useState(false);
   const hasSummary = !!video.video_summary;
-  const summaryPreview = video.video_summary ? truncateSummary(video.video_summary) : null;
+  const summaryPreview = video.video_summary ? truncateText(video.video_summary, 300) : null;
   const isLongSummary = video.video_summary && video.video_summary.length > 300;
 
   return (
@@ -243,10 +205,10 @@ export function HomePage() {
     }
   }, [statsLoading, stats.videos_today, period]);
 
-  // Only fetch digest once we know which period to use (useDigest handles null)
+  // Fetch digest for the selected period (day or week)
   const { videos, videosBySource, totalCount, loading: digestLoading } = useDigest(period);
 
-  const isLoading = authLoading || favoritesLoading || digestLoading || statsLoading;
+  const isLoading = authLoading || favoritesLoading || statsLoading || digestLoading;
   return (
     <div className="p-6 max-w-5xl mx-auto">
       {/* Header */}
@@ -274,17 +236,12 @@ export function HomePage() {
               <TabsTrigger value="week" className="gap-2">
                 <CalendarDays className="h-4 w-4" />
                 This Week
-                {!statsLoading && stats.videos_this_week > 0 && (
-                  <Badge variant="secondary" className="ml-1">
-                    {stats.videos_this_week}
-                  </Badge>
-                )}
               </TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
 
-        <div className="flex items-center gap-4">
+        {/* <div className="flex items-center gap-4">
           {totalCount > 0 && (
             <div className="text-sm text-muted-foreground">
               <span className="font-medium text-foreground">{totalCount}</span> videos
@@ -299,7 +256,7 @@ export function HomePage() {
             <Sparkles className={`h-4 w-4 mr-2 ${showSummaries ? "text-purple-600" : ""}`} />
             {showSummaries ? "Summaries On" : "Summaries Off"}
           </Button>
-        </div>
+        </div> */}
       </div>
 
       {/* Favorites hint */}
@@ -357,6 +314,13 @@ export function HomePage() {
             </p>
           </CardContent>
         </Card>
+      )}
+
+      {/* Weekly Digest Card */}
+      {!isLoading && period === "week" && (
+        <div className="mb-8">
+          <WeeklyDigestCard />
+        </div>
       )}
 
       {/* Videos grouped by channel */}

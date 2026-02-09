@@ -9,7 +9,14 @@ import { SignInDialog } from "@/components/auth/sign-in-dialog";
 import { Markdown } from "@/components/Markdown";
 import { useAuth } from "@/lib/auth";
 import { usePublicDigest, type PublicDigestVideo } from "@/lib/use-public-digest";
+import { usePublicWeeklyDigest, type PublicDigestVideoThumbnail } from "@/lib/use-public-weekly-digest";
 import { SUBSCRIPTION_PRICE } from "@/lib/stripe";
+import {
+  formatDuration,
+  formatRelativeTime,
+  getInitials,
+  truncateText,
+} from "@/lib/format-utils";
 import {
   Sparkles,
   Mail,
@@ -25,46 +32,9 @@ import {
   Headphones,
   ChevronDown,
   ChevronUp,
+  Newspaper,
+  Calendar,
 } from "lucide-react";
-
-function formatDuration(seconds: number | null): string {
-  if (!seconds) return "";
-  const hrs = Math.floor(seconds / 3600);
-  const mins = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
-  if (hrs > 0) {
-    return `${hrs}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  }
-  return `${mins}:${secs.toString().padStart(2, "0")}`;
-}
-
-function formatRelativeTime(dateString: string | null): string {
-  if (!dateString) return "";
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffHours < 1) return "Just now";
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .map((word) => word[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
-
-function truncateSummary(summary: string, maxLength: number = 250): string {
-  if (summary.length <= maxLength) return summary;
-  return summary.slice(0, maxLength).trim() + "...";
-}
 
 interface DigestPreviewCardProps {
   video: PublicDigestVideo;
@@ -72,7 +42,7 @@ interface DigestPreviewCardProps {
 
 function DigestPreviewCard({ video }: DigestPreviewCardProps) {
   const [expanded, setExpanded] = useState(false);
-  const summaryPreview = video.video_summary ? truncateSummary(video.video_summary) : null;
+  const summaryPreview = video.video_summary ? truncateText(video.video_summary, 250) : null;
   const isLongSummary = video.video_summary && video.video_summary.length > 250;
 
   return (
@@ -179,7 +149,7 @@ function DigestPreview() {
           <Sparkles className="h-3 w-3 mr-1" />
           Live Preview
         </Badge>
-        <h2 className="text-3xl font-bold mb-4">Today's digest</h2>
+        <h2 className="text-3xl font-bold mb-4">Today's Summaries</h2>
         <p className="text-muted-foreground max-w-xl mx-auto">
           Here's what we summarized in the last 24 hours.
         </p>
@@ -221,13 +191,142 @@ function DigestPreview() {
             <SignInDialog
               trigger={
                 <Button size="lg" variant="outline" className="gap-2">
-                  Sign up for daily email digests
+                  Sign up for daily summaries
                   <Mail className="h-4 w-4" />
                 </Button>
               }
             />
           </div>
         </>
+      )}
+    </section>
+  );
+}
+
+interface WeeklyVideoThumbnailsProps {
+  videos: PublicDigestVideoThumbnail[];
+  totalCount: number;
+}
+
+function WeeklyVideoThumbnails({ videos, totalCount }: WeeklyVideoThumbnailsProps) {
+  const displayVideos = videos.slice(0, 6);
+  const remaining = totalCount - displayVideos.length;
+
+  return (
+    <div className="flex items-center gap-1">
+      {displayVideos.map((video, index) => (
+        <Avatar
+          key={video.video_id}
+          className="h-8 w-8 border-2 border-background"
+          style={{ marginLeft: index > 0 ? "-8px" : "0" }}
+        >
+          <AvatarImage
+            src={video.video_thumbnail_url || undefined}
+            alt={video.video_title}
+            className="object-cover"
+          />
+          <AvatarFallback className="text-xs bg-muted">
+            {index + 1}
+          </AvatarFallback>
+        </Avatar>
+      ))}
+      {remaining > 0 && (
+        <span className="text-sm text-muted-foreground ml-2">
+          +{remaining} videos
+        </span>
+      )}
+    </div>
+  );
+}
+
+function WeeklyDigestPreview() {
+  const { digest, videos, totalVideoCount, weekRange, loading, error } = usePublicWeeklyDigest();
+
+  if (error || (!loading && !digest)) {
+    return null; // Silently fail - don't show section if we can't fetch
+  }
+
+  // Get a preview of the content (first ~500 chars, ending at a sentence)
+  const getPreview = (content: string) => {
+    const maxLength = 500;
+    if (content.length <= maxLength) return content;
+
+    // Find a good breaking point (end of sentence or paragraph)
+    const truncated = content.slice(0, maxLength);
+    const lastPeriod = truncated.lastIndexOf(". ");
+    const lastNewline = truncated.lastIndexOf("\n");
+    const breakPoint = Math.max(lastPeriod, lastNewline);
+
+    if (breakPoint > 300) {
+      return content.slice(0, breakPoint + 1).trim() + "...";
+    }
+    return truncated.trim() + "...";
+  };
+
+  return (
+    <section className="max-w-6xl mx-auto px-6 py-20 border-t">
+      <div className="text-center mb-12">
+        <Badge variant="secondary" className="mb-4">
+          <Newspaper className="h-3 w-3 mr-1" />
+          Weekly Roundup
+        </Badge>
+        <h2 className="text-3xl font-bold mb-4">This Week's Digest</h2>
+        <p className="text-muted-foreground max-w-xl mx-auto">
+          A synthesis of the week's most important stories and insights.
+        </p>
+      </div>
+
+      {loading ? (
+        <Card className="max-w-3xl mx-auto p-6">
+          <div className="space-y-4">
+            <Skeleton className="h-5 w-40" />
+            <div className="flex items-center gap-1">
+              {[...Array(6)].map((_, i) => (
+                <Skeleton key={i} className="h-8 w-8 rounded-full" />
+              ))}
+              <Skeleton className="h-4 w-20 ml-2" />
+            </div>
+            <Skeleton className="h-px w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+          </div>
+        </Card>
+      ) : digest && (
+        <Card className="max-w-3xl mx-auto p-6">
+          {/* Date Range */}
+          <div className="flex items-center gap-2 text-muted-foreground mb-4">
+            <Calendar className="h-4 w-4" />
+            <span className="text-sm font-medium">{weekRange}</span>
+          </div>
+
+          {/* Video Thumbnails */}
+          {videos.length > 0 && (
+            <div className="mb-4">
+              <WeeklyVideoThumbnails videos={videos} totalCount={totalVideoCount} />
+            </div>
+          )}
+
+          {/* Divider */}
+          <div className="border-t my-4" />
+
+          {/* Preview Content */}
+          <div className="text-sm text-muted-foreground">
+            <Markdown>
+              {getPreview(digest.content)}
+            </Markdown>
+          </div>
+
+          {/* Read More Link */}
+          <div className="mt-6 pt-4 border-t">
+            <Link to="/weekly-digest">
+              <Button variant="outline" className="gap-2">
+                Read full digest
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+        </Card>
       )}
     </section>
   );
@@ -346,6 +445,9 @@ export function LandingPage() {
 
       {/* Live Digest Preview */}
       <DigestPreview />
+
+      {/* Weekly Digest Preview */}
+      <WeeklyDigestPreview />
 
       {/* How It Works */}
       <section className="max-w-6xl mx-auto px-6 py-20">

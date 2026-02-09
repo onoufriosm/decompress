@@ -42,6 +42,7 @@ import { SubscriptionPage } from "./routes/subscription";
 import { AuthCallbackPage } from "./routes/auth-callback";
 import { TermsPage } from "./routes/terms";
 import { PrivacyPage } from "./routes/privacy";
+import { WeeklyDigestPage } from "./routes/weekly-digest";
 
 const router = createBrowserRouter([
   // Wrap all routes with pageview tracker
@@ -66,6 +67,11 @@ const router = createBrowserRouter([
       {
         path: "/privacy",
         element: <PrivacyPage />,
+      },
+      // Public weekly digest page (SEO)
+      {
+        path: "/weekly-digest",
+        element: <WeeklyDigestPage />,
       },
       // Protected routes - require authentication
       {

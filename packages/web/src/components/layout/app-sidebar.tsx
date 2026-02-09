@@ -1,21 +1,17 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { useEffect } from "react";
-import { Home, Video, Radio, Star, Users } from "lucide-react";
+import { Home, Video, Radio, Users } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useAuth } from "@/lib/auth";
-import { useFavorites } from "@/lib/use-favorites";
 
 const navItems = [
   {
@@ -46,18 +42,7 @@ const navItems = [
   // },
 ];
 
-function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .map((word) => word[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
-
 export function AppSidebar() {
-  const { user } = useAuth();
-  const { favorites } = useFavorites();
   const { setOpenMobile } = useSidebar();
   const location = useLocation();
 
@@ -97,42 +82,6 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
-        {user && favorites.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="flex items-center gap-1">
-              <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
-              Favorites
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {favorites.map((fav) => (
-                  <SidebarMenuItem key={fav.id}>
-                    <SidebarMenuButton asChild>
-                      <NavLink
-                        to={`/channels/${fav.source_id}`}
-                        className={({ isActive }) =>
-                          isActive ? "bg-accent" : ""
-                        }
-                      >
-                        <Avatar className="h-5 w-5">
-                          <AvatarImage
-                            src={fav.source?.thumbnail_url || undefined}
-                            alt={fav.source?.name || "Channel"}
-                          />
-                          <AvatarFallback className="text-[10px]">
-                            {fav.source?.name ? getInitials(fav.source.name) : "?"}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="truncate">{fav.source?.name || "Channel"}</span>
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
       </SidebarContent>
     </Sidebar>
   );
