@@ -303,14 +303,14 @@ export function HomePage() {
         </div>
       )}
 
-      {/* Empty State */}
-      {!isLoading && videos.length === 0 && (
+      {/* Empty State (only for daily tab) */}
+      {!isLoading && period === "day" && videos.length === 0 && (
         <Card>
           <CardContent className="p-8 text-center">
             <Check className="h-12 w-12 mx-auto mb-4 text-green-500" />
             <h3 className="font-semibold text-lg mb-2">All caught up!</h3>
             <p className="text-muted-foreground">
-              No new videos {period === "day" ? "today" : "this week"}.
+              No new videos today.
             </p>
           </CardContent>
         </Card>
@@ -323,8 +323,8 @@ export function HomePage() {
         </div>
       )}
 
-      {/* Videos grouped by channel */}
-      {!isLoading && videosBySource.length > 0 && (
+      {/* Videos grouped by channel (only show on daily tab) */}
+      {!isLoading && period === "day" && videosBySource.length > 0 && (
         <div>
           {videosBySource.map((source) => (
             <ChannelGroup

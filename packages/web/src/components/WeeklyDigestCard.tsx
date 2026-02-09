@@ -69,7 +69,7 @@ function VideoThumbnails({ videos, totalCount }: VideoThumbnailsProps) {
 
 export function WeeklyDigestCard() {
   const { digest, videos, totalVideoCount, weekRange, loading, error } = useWeeklyDigest();
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
 
   if (loading) {
     return (
