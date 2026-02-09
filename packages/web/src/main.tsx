@@ -4,7 +4,7 @@ import { createBrowserRouter, RouterProvider, useLocation, Outlet } from "react-
 import { PostHogProvider, usePostHog } from "posthog-js/react";
 import "./index.css";
 
-// Track pageviews on route changes (since auto-capture is disabled)
+// Track pageviews on route changes (auto-capture disabled for performance)
 function PostHogPageviewTracker() {
   const location = useLocation();
   const posthog = usePostHog();
