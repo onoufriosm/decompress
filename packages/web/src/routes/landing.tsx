@@ -246,9 +246,9 @@ function WeeklyDigestPreview() {
     return null; // Silently fail - don't show section if we can't fetch
   }
 
-  // Get a preview of the content (first ~500 chars, ending at a sentence)
+  // Get a preview of the content (first ~800 chars, ending at a sentence)
   const getPreview = (content: string) => {
-    const maxLength = 500;
+    const maxLength = 800;
     if (content.length <= maxLength) return content;
 
     // Find a good breaking point (end of sentence or paragraph)
@@ -386,7 +386,7 @@ export function LandingPage() {
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
             Get 5-minute summaries of 2-hour tech podcasts and YouTube interviews.
-            Daily and weekly digests in your inbox.
+            Daily summaries and weekly digests in your inbox.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <SignInDialog
@@ -399,7 +399,7 @@ export function LandingPage() {
             />
             <a href="#digest-preview">
               <Button size="lg" variant="outline">
-                View Today's Digest
+                View Today's Summaries
               </Button>
             </a>
           </div>
@@ -485,7 +485,7 @@ export function LandingPage() {
             <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mx-auto mb-4">
               <Mail className="h-6 w-6 text-blue-500" />
             </div>
-            <h3 className="font-semibold text-lg mb-2">Daily digest in your inbox</h3>
+            <h3 className="font-semibold text-lg mb-2">Daily summaries in your inbox</h3>
             <p className="text-muted-foreground text-sm">
               Wake up to a curated email with yesterday's best content.
               Scan in 5 minutes over your morning coffee.
@@ -601,7 +601,7 @@ export function LandingPage() {
             <ul className="space-y-3 mb-8">
               <li className="flex items-center gap-2 text-sm">
                 <Check className="h-4 w-4 text-green-500" />
-                Daily and weekly email digests
+                Daily summaries and weekly digest emails
               </li>
               <li className="flex items-center gap-2 text-sm">
                 <Check className="h-4 w-4 text-green-500" />
@@ -638,7 +638,7 @@ export function LandingPage() {
             Ready to save hours every week?
           </h2>
           <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
-            Start your free trial and get daily digests of the best tech podcasts.
+            Start your free trial and get daily summaries of the best tech podcasts.
           </p>
           <SignInDialog
             trigger={

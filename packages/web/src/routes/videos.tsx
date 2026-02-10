@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FilterPanel } from "@/components/filter-panel";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Mic } from "lucide-react";
+import { Search, Mic, X } from "lucide-react";
 
 type DateFilter = "7days" | "30days" | "all";
 type ChannelFilter = "favorites" | "all";
@@ -80,6 +80,7 @@ function formatRelativeDate(dateString: string | null): string {
 
 export function VideosPage() {
   const { user, loading: authLoading } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [videos, setVideos] = useState<Video[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
@@ -90,6 +91,9 @@ export function VideosPage() {
   const [favoriteSourceIds, setFavoriteSourceIds] = useState<string[]>([]);
   const [favoritesLoaded, setFavoritesLoaded] = useState(false);
   const [isSearchingAllTime, setIsSearchingAllTime] = useState(false);
+
+  // Check for week filter from URL params
+  const weekParam = searchParams.get("week");
 
   // Fetch user's favorite channels
   useEffect(() => {
@@ -121,9 +125,9 @@ export function VideosPage() {
     fetchFavorites();
   }, [user, authLoading]);
 
-  // When search is active, switch to "all" mode for both filters
-  const effectiveDateFilter = search ? "all" : dateFilter;
-  const effectiveChannelFilter = search ? "all" : channelFilter;
+  // When search is active or week filter is set, switch to "all" mode for both filters
+  const effectiveDateFilter = search || weekParam ? "all" : dateFilter;
+  const effectiveChannelFilter = search || weekParam ? "all" : channelFilter;
 
   useEffect(() => {
     setIsSearchingAllTime(!!search);
@@ -136,18 +140,25 @@ export function VideosPage() {
 
       setLoading(true);
 
-      // Calculate date filter
-      const getDateFilter = () => {
+      // Calculate date filter (returns {start, end} for week filter or {start} for relative filters)
+      const getDateFilter = (): { start: string | null; end: string | null } => {
+        // If week param is set, filter by that specific week
+        if (weekParam) {
+          const weekStart = new Date(weekParam);
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekEnd.getDate() + 7);
+          return { start: weekStart.toISOString(), end: weekEnd.toISOString() };
+        }
         if (effectiveDateFilter === "7days") {
           const date = new Date();
           date.setDate(date.getDate() - 7);
-          return date.toISOString();
+          return { start: date.toISOString(), end: null };
         } else if (effectiveDateFilter === "30days") {
           const date = new Date();
           date.setDate(date.getDate() - 30);
-          return date.toISOString();
+          return { start: date.toISOString(), end: null };
         }
-        return null;
+        return { start: null, end: null };
       };
       const dateFilterValue = getDateFilter();
 
@@ -199,8 +210,11 @@ export function VideosPage() {
         countQuery = countQuery.in("source_id", favoriteSourceIds);
       }
 
-      if (dateFilterValue) {
-        countQuery = countQuery.gte("published_at", dateFilterValue);
+      if (dateFilterValue.start) {
+        countQuery = countQuery.gte("published_at", dateFilterValue.start);
+      }
+      if (dateFilterValue.end) {
+        countQuery = countQuery.lt("published_at", dateFilterValue.end);
       }
 
       if (search) {
@@ -240,8 +254,11 @@ export function VideosPage() {
       }
 
       // Apply date filter
-      if (dateFilterValue) {
-        query = query.gte("published_at", dateFilterValue);
+      if (dateFilterValue.start) {
+        query = query.gte("published_at", dateFilterValue.start);
+      }
+      if (dateFilterValue.end) {
+        query = query.lt("published_at", dateFilterValue.end);
       }
 
       // Apply text search
@@ -290,7 +307,7 @@ export function VideosPage() {
 
     const debounce = setTimeout(fetchVideos, 300);
     return () => clearTimeout(debounce);
-  }, [search, selectedCategories, effectiveDateFilter, effectiveChannelFilter, favoriteSourceIds, favoritesLoaded]);
+  }, [search, selectedCategories, effectiveDateFilter, effectiveChannelFilter, favoriteSourceIds, favoritesLoaded, weekParam]);
 
   return (
     <div className="p-6">
@@ -302,10 +319,10 @@ export function VideosPage() {
             onValueChange={(v) => setChannelFilter(v as ChannelFilter)}
           >
             <TabsList>
-              <TabsTrigger value="favorites" disabled={!!search || (favoritesLoaded && favoriteSourceIds.length === 0)}>
+              <TabsTrigger value="favorites" disabled={!!search || !!weekParam || (favoritesLoaded && favoriteSourceIds.length === 0)}>
                 Favorite channels
               </TabsTrigger>
-              <TabsTrigger value="all" disabled={!!search}>All channels</TabsTrigger>
+              <TabsTrigger value="all" disabled={!!search || !!weekParam}>All channels</TabsTrigger>
             </TabsList>
           </Tabs>
           <Tabs
@@ -313,12 +330,25 @@ export function VideosPage() {
             onValueChange={(v) => setDateFilter(v as DateFilter)}
           >
             <TabsList>
-              <TabsTrigger value="7days" disabled={!!search}>Last 7 days</TabsTrigger>
-              <TabsTrigger value="30days" disabled={!!search}>Last 30 days</TabsTrigger>
-              <TabsTrigger value="all" disabled={!!search}>All time</TabsTrigger>
+              <TabsTrigger value="7days" disabled={!!search || !!weekParam}>Last 7 days</TabsTrigger>
+              <TabsTrigger value="30days" disabled={!!search || !!weekParam}>Last 30 days</TabsTrigger>
+              <TabsTrigger value="all" disabled={!!search || !!weekParam}>All time</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
+        {weekParam && (
+          <div className="flex items-center gap-2 mb-4">
+            <Badge variant="secondary" className="gap-1 pr-1">
+              Week of {new Date(weekParam).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+              <button
+                onClick={() => setSearchParams({})}
+                className="ml-1 hover:bg-muted rounded p-0.5"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          </div>
+        )}
         <div className="relative max-w-md mb-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -333,13 +363,18 @@ export function VideosPage() {
             Searching across all videos
           </p>
         )}
-        {!loading && (
+        {!loading && !weekParam && (
           <p className="text-sm text-muted-foreground mb-4">
             {totalCount} video{totalCount !== 1 ? "s" : ""}{" "}
             {effectiveChannelFilter === "favorites" && !search && "from favorite channels "}
             {effectiveDateFilter === "7days" && "in the last 7 days"}
             {effectiveDateFilter === "30days" && "in the last 30 days"}
             {effectiveDateFilter === "all" && !search && "total"}
+          </p>
+        )}
+        {!loading && weekParam && (
+          <p className="text-sm text-muted-foreground mb-4">
+            {totalCount} video{totalCount !== 1 ? "s" : ""} from this week
           </p>
         )}
         <FilterPanel

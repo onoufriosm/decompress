@@ -1,44 +1,27 @@
-import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Markdown } from "@/components/Markdown";
 import { useWeeklyDigest, type DigestVideoThumbnail } from "@/lib/use-weekly-digest";
 import {
   Newspaper,
-  ChevronDown,
-  ChevronUp,
   Calendar,
 } from "lucide-react";
-
-// Content to show when collapsed (up to "Top News This Week" section)
-function getDigestSnippet(content: string): string {
-  // Find the end of "Top News This Week" section (the next "---" after it)
-  const topNewsIndex = content.indexOf("## Top News This Week");
-  if (topNewsIndex === -1) {
-    // Fallback: return first 1500 characters
-    return content.slice(0, 1500) + "...";
-  }
-
-  // Find the divider after Top News section
-  const afterTopNews = content.indexOf("---", topNewsIndex + 20);
-  if (afterTopNews === -1) {
-    return content.slice(0, topNewsIndex + 1500) + "...";
-  }
-
-  return content.slice(0, afterTopNews).trim();
-}
 
 interface VideoThumbnailsProps {
   videos: DigestVideoThumbnail[];
   totalCount: number;
+  weekStart: string;
 }
 
-function VideoThumbnails({ videos, totalCount }: VideoThumbnailsProps) {
+function VideoThumbnails({ videos, totalCount, weekStart }: VideoThumbnailsProps) {
   const displayVideos = videos.slice(0, 6);
   const remaining = totalCount - displayVideos.length;
+
+  // Build the URL to filter videos by this week
+  const weekVideosUrl = `/videos?week=${weekStart}`;
 
   return (
     <div className="flex items-center gap-1">
@@ -59,9 +42,12 @@ function VideoThumbnails({ videos, totalCount }: VideoThumbnailsProps) {
         </Avatar>
       ))}
       {remaining > 0 && (
-        <span className="text-sm text-muted-foreground ml-2">
+        <Link
+          to={weekVideosUrl}
+          className="text-sm text-primary hover:underline ml-2"
+        >
           +{remaining} videos
-        </span>
+        </Link>
       )}
     </div>
   );
@@ -69,7 +55,6 @@ function VideoThumbnails({ videos, totalCount }: VideoThumbnailsProps) {
 
 export function WeeklyDigestCard() {
   const { digest, videos, totalVideoCount, weekRange, loading, error } = useWeeklyDigest();
-  const [expanded, setExpanded] = useState(true);
 
   if (loading) {
     return (
@@ -108,9 +93,6 @@ export function WeeklyDigestCard() {
     );
   }
 
-  const snippet = getDigestSnippet(digest.content);
-  const isLongContent = digest.content.length > snippet.length + 100;
-
   return (
     <Card className="p-6">
       {/* Header */}
@@ -130,7 +112,11 @@ export function WeeklyDigestCard() {
       {/* Video Thumbnails */}
       {videos.length > 0 && (
         <div className="mb-4">
-          <VideoThumbnails videos={videos} totalCount={totalVideoCount} />
+          <VideoThumbnails
+            videos={videos}
+            totalCount={totalVideoCount}
+            weekStart={digest.week_start}
+          />
         </div>
       )}
 
@@ -140,30 +126,9 @@ export function WeeklyDigestCard() {
       {/* Content */}
       <div className="text-sm">
         <Markdown>
-          {expanded ? digest.content : snippet}
+          {digest.content}
         </Markdown>
       </div>
-
-      {/* Expand/Collapse Button */}
-      {isLongContent && (
-        <div className="mt-4 pt-4 border-t flex justify-center">
-          <Button
-            variant="outline"
-            onClick={() => setExpanded(!expanded)}
-            className="gap-2"
-          >
-            {expanded ? (
-              <>
-                Show less <ChevronUp className="h-4 w-4" />
-              </>
-            ) : (
-              <>
-                Read full digest <ChevronDown className="h-4 w-4" />
-              </>
-            )}
-          </Button>
-        </div>
-      )}
     </Card>
   );
 }
