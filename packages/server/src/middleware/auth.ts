@@ -73,11 +73,12 @@ export async function getQueryUsage(userId: string): Promise<QueryUsage> {
     .gte("created_at", startOfMonth.toISOString());
 
   if (error) {
+    // Fail closed: deny access on database error rather than granting unlimited access
     console.error("Error fetching query usage:", error);
     return {
-      queriesUsed: 0,
-      queriesRemaining: MONTHLY_QUERY_LIMIT,
-      limitReached: false,
+      queriesUsed: MONTHLY_QUERY_LIMIT,
+      queriesRemaining: 0,
+      limitReached: true,
     };
   }
 
