@@ -21,11 +21,9 @@ import {
   Sparkles,
   Mail,
   Clock,
-  Play,
   ArrowRight,
   Check,
   Zap,
-  MessageSquare,
   Loader2,
   Users,
   TrendingUp,
@@ -143,15 +141,15 @@ function DigestPreview() {
   }
 
   return (
-    <section id="digest-preview" className="max-w-6xl mx-auto px-6 py-20">
+    <section className="max-w-6xl mx-auto px-6 py-20 border-t">
       <div className="text-center mb-12">
         <Badge variant="secondary" className="mb-4">
-          <Sparkles className="h-3 w-3 mr-1" />
-          Live Preview
+          <Clock className="h-3 w-3 mr-1" />
+          Daily Catch-up
         </Badge>
-        <h2 className="text-3xl font-bold mb-4">Today's Summaries</h2>
+        <h2 className="text-3xl font-bold mb-4">Yesterday's Episodes</h2>
         <p className="text-muted-foreground max-w-xl mx-auto">
-          Here's what we summarized in the last 24 hours.
+          Every morning, get individual episode summaries from across the podcast ecosystem. Scan them all in 5 minutes.
         </p>
       </div>
 
@@ -191,7 +189,7 @@ function DigestPreview() {
             <SignInDialog
               trigger={
                 <Button size="lg" variant="outline" className="gap-2">
-                  Sign up for daily summaries
+                  Get the daily briefing
                   <Mail className="h-4 w-4" />
                 </Button>
               }
@@ -264,20 +262,20 @@ function WeeklyDigestPreview() {
   };
 
   return (
-    <section className="max-w-6xl mx-auto px-6 py-20 border-t">
+    <section id="weekly-briefing" className="max-w-6xl mx-auto px-6 py-20">
       <div className="text-center mb-12">
         <Badge variant="secondary" className="mb-4">
           <Newspaper className="h-3 w-3 mr-1" />
-          Weekly Roundup
+          Weekly Briefing
         </Badge>
-        <h2 className="text-3xl font-bold mb-4">This Week's Digest</h2>
+        <h2 className="text-3xl font-bold mb-4">This Week's Briefing</h2>
         <p className="text-muted-foreground max-w-xl mx-auto">
-          A synthesis of the week's most important stories and insights.
+          Themes, trends, and takeaways connected across 40+ tech podcasts. This is what makes Decompress different.
         </p>
       </div>
 
       {loading ? (
-        <Card className="max-w-3xl mx-auto p-6">
+        <Card className="p-6">
           <div className="space-y-4">
             <Skeleton className="h-5 w-40" />
             <div className="flex items-center gap-1">
@@ -293,7 +291,7 @@ function WeeklyDigestPreview() {
           </div>
         </Card>
       ) : digest && (
-        <Card className="max-w-3xl mx-auto p-6">
+        <Card className="p-6">
           {/* Date Range */}
           <div className="flex items-center gap-2 text-muted-foreground mb-4">
             <Calendar className="h-4 w-4" />
@@ -321,7 +319,7 @@ function WeeklyDigestPreview() {
           <div className="mt-6 pt-4 border-t">
             <Link to="/weekly-digest">
               <Button variant="outline" className="gap-2">
-                Read full digest
+                Read full briefing
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
@@ -381,12 +379,12 @@ export function LandingPage() {
             a16z · 20VC · All-In · Lenny's Podcast · and more
           </Badge>
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
-            <span>All the best ideas from tech podcasts.</span>{" "}
-            Without watching them.
+            <span>The tech briefing that reads 40+ podcasts</span>{" "}
+            so you don't have to.
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Get 5-minute summaries of 2-hour tech podcasts and YouTube interviews.
-            Daily summaries and weekly digests in your inbox.
+            Every week, top founders and VCs share insights across dozens of podcasts.
+            Decompress connects the dots — what's trending, who's saying what, and where the smart money is looking.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <SignInDialog
@@ -397,9 +395,9 @@ export function LandingPage() {
                 </Button>
               }
             />
-            <a href="#digest-preview">
+            <a href="#weekly-briefing">
               <Button size="lg" variant="outline">
-                View Today's Summaries
+                See This Week's Briefing
               </Button>
             </a>
           </div>
@@ -413,71 +411,71 @@ export function LandingPage() {
       <section className="border-y bg-muted/30">
         <div className="max-w-6xl mx-auto px-6 py-12">
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold mb-2">Built for busy tech professionals</h2>
+            <h2 className="text-2xl font-bold mb-2">For people who need to know, not people who need to watch</h2>
             <p className="text-muted-foreground">
-              If you follow tech podcasts but rarely have time to watch, this is for you.
+              Stay informed on every major tech conversation without watching a single episode.
             </p>
           </div>
           <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
             <Card className="p-4 text-center">
               <Users className="h-6 w-6 mx-auto mb-2 text-primary" />
               <div className="font-medium text-sm">Founders</div>
-              <p className="text-xs text-muted-foreground">Stay sharp on trends while building</p>
+              <p className="text-xs text-muted-foreground">Know what VCs are talking about this week without watching 20 hours of content</p>
             </Card>
             <Card className="p-4 text-center">
               <TrendingUp className="h-6 w-6 mx-auto mb-2 text-primary" />
               <div className="font-medium text-sm">Investors</div>
-              <p className="text-xs text-muted-foreground">Catch every insight from top VCs</p>
+              <p className="text-xs text-muted-foreground">Track which founders and topics keep showing up across multiple podcasts</p>
             </Card>
             <Card className="p-4 text-center">
               <Zap className="h-6 w-6 mx-auto mb-2 text-primary" />
               <div className="font-medium text-sm">Operators</div>
-              <p className="text-xs text-muted-foreground">Learn from the best, faster</p>
+              <p className="text-xs text-muted-foreground">Get the frameworks and playbooks without the 2-hour time commitment</p>
             </Card>
             <Card className="p-4 text-center">
               <Sparkles className="h-6 w-6 mx-auto mb-2 text-primary" />
               <div className="font-medium text-sm">Tech enthusiasts</div>
-              <p className="text-xs text-muted-foreground">Never miss the conversation</p>
+              <p className="text-xs text-muted-foreground">Stay on top of every major tech conversation, every week</p>
             </Card>
           </div>
         </div>
       </section>
 
-      {/* Live Digest Preview */}
-      <DigestPreview />
-
-      {/* Weekly Digest Preview */}
+      {/* Weekly Briefing Preview — hero feature, shown first */}
       <WeeklyDigestPreview />
+
+      {/* Daily Catch-up Preview */}
+      <DigestPreview />
 
       {/* How It Works */}
       <section className="max-w-6xl mx-auto px-6 py-20">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">From 2-hour podcast to 5-minute read</h2>
+          <h2 className="text-3xl font-bold mb-4">What you get that you can't get anywhere else</h2>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            We watch the podcasts so you don't have to. Here's what you get.
+            Not just summaries — intelligence that connects insights across the entire tech podcast ecosystem.
           </p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">
           <Card className="p-6 text-center">
             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-              <Play className="h-6 w-6 text-primary" />
+              <Newspaper className="h-6 w-6 text-primary" />
             </div>
-            <h3 className="font-semibold text-lg mb-2">Curated sources</h3>
+            <h3 className="font-semibold text-lg mb-2">Weekly briefing</h3>
             <p className="text-muted-foreground text-sm">
-              We track a16z, 20VC, All-In, and dozens more top tech podcasts.
-              New episodes summarized within hours.
+              Every week, get a synthesized briefing that connects themes across 40+ tech podcasts.
+              Not a list of summaries — an actual analysis of what tech talked about this week.
             </p>
           </Card>
 
           <Card className="p-6 text-center">
             <div className="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center mx-auto mb-4">
-              <Sparkles className="h-6 w-6 text-purple-500" />
+              <TrendingUp className="h-6 w-6 text-purple-500" />
             </div>
-            <h3 className="font-semibold text-lg mb-2">Key insights extracted</h3>
+            <h3 className="font-semibold text-lg mb-2">Cross-podcast intelligence</h3>
             <p className="text-muted-foreground text-sm">
-              Get the main arguments, notable quotes, and actionable takeaways.
-              Skip the intros, ads, and tangents.
+              Three VCs said the same thing on different podcasts this week?
+              We catch that. See where experts agree, disagree, and what topics are suddenly everywhere.
             </p>
           </Card>
 
@@ -485,10 +483,10 @@ export function LandingPage() {
             <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mx-auto mb-4">
               <Mail className="h-6 w-6 text-blue-500" />
             </div>
-            <h3 className="font-semibold text-lg mb-2">Daily summaries in your inbox</h3>
+            <h3 className="font-semibold text-lg mb-2">Daily catch-up</h3>
             <p className="text-muted-foreground text-sm">
-              Wake up to a curated email with yesterday's best content.
-              Scan in 5 minutes over your morning coffee.
+              Every morning, scan yesterday's new episodes in 5 minutes.
+              Each one summarized with key insights, guests, and takeaways.
             </p>
           </Card>
         </div>
@@ -500,7 +498,7 @@ export function LandingPage() {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-3xl font-bold mb-6">
-                Save 10+ hours a week on podcasts
+                The unfair advantage of knowing everything
               </h2>
               <ul className="space-y-4">
                 <li className="flex items-start gap-3">
@@ -508,9 +506,9 @@ export function LandingPage() {
                     <Check className="h-4 w-4 text-green-500" />
                   </div>
                   <div>
-                    <span className="font-medium">5-minute reads instead of 2-hour watches</span>
+                    <span className="font-medium">Cover 40+ podcasts in 15 minutes</span>
                     <p className="text-sm text-muted-foreground">
-                      Cover 10 podcasts in the time it takes to watch one episode
+                      Not by watching faster — by reading smarter
                     </p>
                   </div>
                 </li>
@@ -519,9 +517,9 @@ export function LandingPage() {
                     <Check className="h-4 w-4 text-green-500" />
                   </div>
                   <div>
-                    <span className="font-medium">Signal, not noise</span>
+                    <span className="font-medium">Spot trends before they're obvious</span>
                     <p className="text-sm text-muted-foreground">
-                      We cut the intros, sponsor reads, and tangents. You get the insights.
+                      When 3 podcasts mention the same thing in one week, that's signal
                     </p>
                   </div>
                 </li>
@@ -530,9 +528,9 @@ export function LandingPage() {
                     <Check className="h-4 w-4 text-green-500" />
                   </div>
                   <div>
-                    <span className="font-medium">Triage before you commit</span>
+                    <span className="font-medium">Know who's saying what</span>
                     <p className="text-sm text-muted-foreground">
-                      Quickly decide which episodes deserve your full attention
+                      Track guests and hosts across the entire podcast ecosystem
                     </p>
                   </div>
                 </li>
@@ -541,9 +539,9 @@ export function LandingPage() {
                     <Check className="h-4 w-4 text-green-500" />
                   </div>
                   <div>
-                    <span className="font-medium">Ask follow-up questions</span>
+                    <span className="font-medium">Go deeper when it matters</span>
                     <p className="text-sm text-muted-foreground">
-                      Use AI chat to dive deeper into any topic from the episode
+                      Ask AI questions across multiple episodes at once
                     </p>
                   </div>
                 </li>
@@ -551,24 +549,24 @@ export function LandingPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <Card className="p-4 text-center">
-                <Clock className="h-8 w-8 mx-auto mb-2 text-primary" />
-                <div className="text-3xl font-bold">5 min</div>
-                <div className="text-sm text-muted-foreground">per episode summary</div>
+                <Headphones className="h-8 w-8 mx-auto mb-2 text-primary" />
+                <div className="text-3xl font-bold">40+</div>
+                <div className="text-sm text-muted-foreground">podcasts tracked</div>
               </Card>
               <Card className="p-4 text-center">
-                <Zap className="h-8 w-8 mx-auto mb-2 text-yellow-500" />
-                <div className="text-3xl font-bold">20x</div>
-                <div className="text-sm text-muted-foreground">faster than watching</div>
+                <Clock className="h-8 w-8 mx-auto mb-2 text-yellow-500" />
+                <div className="text-3xl font-bold">15 min</div>
+                <div className="text-sm text-muted-foreground">to cover them all</div>
               </Card>
               <Card className="p-4 text-center">
-                <MessageSquare className="h-8 w-8 mx-auto mb-2 text-blue-500" />
-                <div className="text-3xl font-bold">AI chat</div>
-                <div className="text-sm text-muted-foreground">ask about any episode</div>
+                <Newspaper className="h-8 w-8 mx-auto mb-2 text-blue-500" />
+                <div className="text-3xl font-bold">Weekly</div>
+                <div className="text-sm text-muted-foreground">cross-podcast briefing</div>
               </Card>
               <Card className="p-4 text-center">
                 <Mail className="h-8 w-8 mx-auto mb-2 text-green-500" />
                 <div className="text-3xl font-bold">Daily</div>
-                <div className="text-sm text-muted-foreground">digest emails</div>
+                <div className="text-sm text-muted-foreground">catch-up emails</div>
               </Card>
             </div>
           </div>
@@ -578,9 +576,9 @@ export function LandingPage() {
       {/* Pricing */}
       <section className="max-w-6xl mx-auto px-6 py-20">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">Simple pricing</h2>
+          <h2 className="text-3xl font-bold mb-4">One subscription. The entire tech podcast ecosystem.</h2>
           <p className="text-muted-foreground">
-            Browse today's digest free. Subscribe for personalized digests and full access.
+            For less than the cost of one coffee a week, stay informed on every major tech podcast.
           </p>
         </div>
 
@@ -601,7 +599,7 @@ export function LandingPage() {
             <ul className="space-y-3 mb-8">
               <li className="flex items-center gap-2 text-sm">
                 <Check className="h-4 w-4 text-green-500" />
-                Daily summaries and weekly digest emails
+                Daily catch-up and weekly briefing emails
               </li>
               <li className="flex items-center gap-2 text-sm">
                 <Check className="h-4 w-4 text-green-500" />
@@ -635,10 +633,10 @@ export function LandingPage() {
       <section className="border-t">
         <div className="max-w-6xl mx-auto px-6 py-16 text-center">
           <h2 className="text-2xl md:text-3xl font-bold mb-4">
-            Ready to save hours every week?
+            Stop falling behind on tech podcasts.
           </h2>
           <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
-            Start your free trial and get daily summaries of the best tech podcasts.
+            Start your free trial and get your first weekly briefing this Sunday.
           </p>
           <SignInDialog
             trigger={
