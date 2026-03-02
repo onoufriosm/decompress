@@ -59,8 +59,8 @@ export function FavoriteButton({
           <Star
             className={cn(
               size === "sm" ? "h-4 w-4" : size === "lg" ? "h-6 w-6" : "h-5 w-5",
-              favorited && "fill-current"
             )}
+            fill={favorited ? "currentColor" : "none"}
           />
         </button>
         <SignInDialog open={showSignIn} onOpenChange={setShowSignIn} />
@@ -81,10 +81,8 @@ export function FavoriteButton({
         )}
       >
         <Star
-          className={cn(
-            "h-4 w-4 mr-2",
-            favorited && "fill-current"
-          )}
+          className="h-4 w-4 mr-2"
+          fill={favorited ? "currentColor" : "none"}
         />
         {favorited ? "Favorited" : "Favorite"}
       </Button>

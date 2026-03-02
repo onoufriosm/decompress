@@ -20,6 +20,7 @@ Do you do that often — pull frameworks from podcast episodes into your workflo
 - **2026 activity:** Yes — posted Feb 1, 2026
 - **DM:**
 Post Reply: That's awesome — one episode changing everything. What was the specific moment that made you start building?
+SKIPPED
 
 ## Candidate 53
 - **Name / Handle:** Mauro Rebelo / @tagomago_me
@@ -29,7 +30,7 @@ Post Reply: That's awesome — one episode changing everything. What was the spe
 - **Why they're a good fit:** Scientist at UFRJ and entrepreneur building biodiversity tech with @biobureaubio. Writes about biotech, biodiversity, business, and bitcoin. A power podcast listener (35 Lex episodes!) who already uses podcast tools like Snipd — ideal Decompress user.
 - **2026 activity:** Yes — posted Jan 15, 2026
 - **DM:**
-Hi Mauro! 35 Lex Fridman episodes is impressive. With that volume, do you find Snipd captures everything you want, or do insights still slip through?
+Hi Mauro! 35 Lex Fridman episodes is impressive. Curious, do you watch the entire episodes or clips?
 
 ## Candidate 54
 - **Name / Handle:** Jeff Richards / @jrichlive
@@ -49,8 +50,11 @@ Post Reply: Great pull from No Priors. Do you find yourself quoting podcast insi
 - **Why they're a good fit:** GP at Six Point Ventures (pre/seed fund, Vertical AI, US-Israel). Exited founder/operator and angel investor. Runs a weekly startup/tech/VC newsletter. Actively listens to Invest Like The Best and extracts specific data points from episodes — a VC who uses podcasts for deal intelligence.
 - **2026 activity:** Yes — posted Jan 21, 2026
 - **DM:**
-Hi Trace! Saw you pulling the a16z follow-on stats from the Invest Like The Best episode. Great insight for fund strategy.
-With the newsletter and investing, how do you keep up with all the podcast content in your space?
+Hi Trace! Really enjoyed your "Will Vertical AI Survive?" article. 
+
+I've built an app that pulls data from tech podcasts and provides analysis on these topics, which I think you might be useful. For this topic for example Doug O'Laughlin believes SAAS becomes mainframe-like, 6% growth while David Sacks pushes back saying 25 years of bug fixes can't be replaced easily.
+
+Let me know if you want full access to the report and I can share it with you.
 
 ## Candidate 56
 - **Name / Handle:** Kern / @CornOnTheCohbs
@@ -73,6 +77,7 @@ Curious what made you decide not to build it — too crowded, or something else?
 - **DM:**
 Hi! Saw you set up your AI employee to track Lenny's product pass — that's smart.
 Do you do anything similar to keep up with podcast episodes, or does that content mostly pile up?
+SKIPPED
 
 ## Candidate 58
 - **Name / Handle:** Ashutosh Singh / @_aaashuuu_

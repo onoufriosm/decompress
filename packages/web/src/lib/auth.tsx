@@ -101,8 +101,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [posthog]);
 
   const signInWithOtp = async (email: string) => {
-    // Use VITE_APP_URL for production, fallback to window.location.origin for local dev
-    const appUrl = import.meta.env.VITE_APP_URL || window.location.origin;
+    // Always redirect back to the origin where sign-in was initiated.
+    const appUrl = window.location.origin;
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {

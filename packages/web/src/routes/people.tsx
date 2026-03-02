@@ -33,9 +33,15 @@ function getInitials(name: string): string {
 
 const PAGE_LIMIT = 50;
 
+interface TotalCounts {
+  all: number;
+  hosts: number;
+  guests: number;
+}
+
 export function PeoplePage() {
   const [people, setPeople] = useState<Person[]>([]);
-  const [totalCount, setTotalCount] = useState<number>(0);
+  const [totalCounts, setTotalCounts] = useState<TotalCounts>({ all: 0, hosts: 0, guests: 0 });
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<TabFilter>("all");
@@ -124,7 +130,12 @@ export function PeoplePage() {
         return b.host_count + b.guest_count - (a.host_count + a.guest_count);
       });
 
-      setTotalCount(enrichedPeople.length);
+      // Calculate totals before pagination
+      setTotalCounts({
+        all: enrichedPeople.length,
+        hosts: enrichedPeople.filter((p) => p.host_count > 0).length,
+        guests: enrichedPeople.filter((p) => p.guest_count > 0).length,
+      });
       setPeople(enrichedPeople.slice(0, PAGE_LIMIT));
       setLoading(false);
     }
@@ -155,10 +166,10 @@ export function PeoplePage() {
         </div>
         {!loading && (
           <p className="text-sm text-muted-foreground">
-            {filteredPeople.length}{" "}
-            {activeTab === "hosts" && (filteredPeople.length === 1 ? "host" : "hosts")}
-            {activeTab === "guests" && (filteredPeople.length === 1 ? "guest" : "guests")}
-            {activeTab === "all" && (filteredPeople.length === 1 ? "person" : "people")}
+            {totalCounts[activeTab]}{" "}
+            {activeTab === "hosts" && (totalCounts[activeTab] === 1 ? "host" : "hosts")}
+            {activeTab === "guests" && (totalCounts[activeTab] === 1 ? "guest" : "guests")}
+            {activeTab === "all" && (totalCounts[activeTab] === 1 ? "person" : "people")}
             {" "}total
           </p>
         )}
@@ -227,10 +238,10 @@ export function PeoplePage() {
               </Link>
             ))}
           </div>
-          {totalCount > filteredPeople.length && (
+          {totalCounts[activeTab] > filteredPeople.length && (
             <div className="mt-8 text-center py-6 border-t">
               <p className="text-muted-foreground">
-                <span className="font-medium text-foreground">{totalCount - filteredPeople.length} more people</span> available.
+                <span className="font-medium text-foreground">{totalCounts[activeTab] - filteredPeople.length} more {activeTab === "all" ? "people" : activeTab}</span> available.
                 Use the search above to discover more.
               </p>
             </div>

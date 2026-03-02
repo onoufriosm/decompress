@@ -17,6 +17,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Search, Video, Clock } from "lucide-react";
+import {
+  getTechnologyCategoryId,
+  getTechnologySourceIds,
+} from "@/lib/technology-filter";
 
 type TabFilter = "all" | "favorites";
 
@@ -70,6 +74,18 @@ export function ChannelsPage() {
   const [activeTab, setActiveTab] = useState<TabFilter>("favorites");
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [favoritesLoaded, setFavoritesLoaded] = useState(false);
+
+  // Keep UI filter state aligned with default data filter on first load.
+  useEffect(() => {
+    async function initializeTechnologyFilter() {
+      const technologyCategoryId = await getTechnologyCategoryId();
+      if (technologyCategoryId) {
+        setSelectedCategories([technologyCategoryId]);
+      }
+    }
+
+    initializeTechnologyFilter();
+  }, []);
 
   // Fetch user's favorite channels
   useEffect(() => {
@@ -132,7 +148,7 @@ export function ChannelsPage() {
     async function fetchChannels() {
       setLoading(true);
 
-      // If we have category filters, we need to get the source IDs first
+      // Default to technology sources; user's category selection overrides
       let filteredSourceIds: string[] | null = null;
 
       if (selectedCategories.length > 0) {
@@ -141,9 +157,11 @@ export function ChannelsPage() {
           .select("source_id")
           .in("category_id", selectedCategories);
 
-        const categorySourceIds =
+        filteredSourceIds =
           categorizedSources?.map((s) => s.source_id) || [];
-        filteredSourceIds = categorySourceIds;
+      } else {
+        const techSourceIds = await getTechnologySourceIds();
+        filteredSourceIds = techSourceIds.length > 0 ? techSourceIds : null;
       }
 
       // If filters returned no results, show empty

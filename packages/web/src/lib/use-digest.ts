@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "./supabase";
 import { useFavorites } from "./use-favorites";
+import { getTechnologySourceIds } from "./technology-filter";
 
 export type DigestPeriod = "day" | "week";
 
@@ -93,6 +94,7 @@ export function useDigest(period: DigestPeriod | null = "day") {
     setError(null);
 
     const cutoff = getCutoffDate(period);
+    const techSourceIds = await getTechnologySourceIds();
 
     try {
       // Build query - filter by favorites if user has any, otherwise show all
@@ -115,9 +117,11 @@ export function useDigest(period: DigestPeriod | null = "day") {
         .order("published_at", { ascending: false })
         .limit(100);
 
-      // Filter by favorites if user has favorited channels
+      // Filter by favorites if user has any, otherwise fall back to technology sources
       if (favoriteIds.size > 0) {
         query = query.in("source_id", Array.from(favoriteIds));
+      } else if (techSourceIds.length > 0) {
+        query = query.in("source_id", techSourceIds);
       }
 
       const { data, error: fetchError } = await query;
@@ -204,6 +208,7 @@ export function useDigestStats() {
 
     const dayAgo = getCutoffDate("day");
     const weekAgo = getCutoffDate("week");
+    const techSourceIds = await getTechnologySourceIds();
 
     try {
       // Build base queries - filter by thumbnail_url to match what useDigest displays
@@ -219,11 +224,14 @@ export function useDigestStats() {
         .gte("published_at", weekAgo)
         .not("thumbnail_url", "is", null);
 
-      // Filter by favorites if user has favorited channels
+      // Filter by favorites if user has any, otherwise fall back to technology sources
       if (favoriteIds.size > 0) {
         const sourceIds = Array.from(favoriteIds);
         todayQuery = todayQuery.in("source_id", sourceIds);
         weekQuery = weekQuery.in("source_id", sourceIds);
+      } else if (techSourceIds.length > 0) {
+        todayQuery = todayQuery.in("source_id", techSourceIds);
+        weekQuery = weekQuery.in("source_id", techSourceIds);
       }
 
       const [todayResult, weekResult] = await Promise.all([todayQuery, weekQuery]);

@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "./supabase";
+import { getTechnologySourceIds } from "./technology-filter";
 
 export interface PublicDigestVideo {
   video_id: string;
@@ -53,8 +54,10 @@ export function usePublicDigest(limit: number = 6) {
     setError(null);
 
     try {
+      const techSourceIds = await getTechnologySourceIds();
+
       // Get the latest videos with summaries, regardless of date
-      const { data, error: fetchError } = await supabase
+      let videoQuery = supabase
         .from("videos")
         .select(`
           id,
@@ -70,6 +73,12 @@ export function usePublicDigest(limit: number = 6) {
         .not("summary", "is", null) // Only show videos with summaries
         .order("published_at", { ascending: false })
         .limit(limit);
+
+      if (techSourceIds.length > 0) {
+        videoQuery = videoQuery.in("source_id", techSourceIds);
+      }
+
+      const { data, error: fetchError } = await videoQuery;
 
       if (fetchError) throw fetchError;
 

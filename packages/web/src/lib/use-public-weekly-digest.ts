@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "./supabase";
+import { getTechnologySourceIds } from "./technology-filter";
 
 export interface PublicWeeklyDigest {
   id: string;
@@ -53,7 +54,8 @@ export function usePublicWeeklyDigest() {
       weekEnd.setDate(weekEnd.getDate() + 7);
 
       // Fetch videos from that week for thumbnails (public read via RLS)
-      const { data: videoData, error: videoError, count } = await supabase
+      const techSourceIds = await getTechnologySourceIds();
+      let videoQuery = supabase
         .from("videos")
         .select("id, thumbnail_url, title", { count: "exact" })
         .gte("published_at", weekStart.toISOString())
@@ -61,6 +63,12 @@ export function usePublicWeeklyDigest() {
         .not("thumbnail_url", "is", null)
         .order("published_at", { ascending: false })
         .limit(10);
+
+      if (techSourceIds.length > 0) {
+        videoQuery = videoQuery.in("source_id", techSourceIds);
+      }
+
+      const { data: videoData, error: videoError, count } = await videoQuery;
 
       if (videoError) throw videoError;
 
