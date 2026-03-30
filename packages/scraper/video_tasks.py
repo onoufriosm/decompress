@@ -476,13 +476,16 @@ def sync_new_videos(limit_per_channel: int = 20, new_channel_limit: int = 10):
                     "metadata_scraped_at": now,
                 }
 
-                # Parse upload date
+                # Parse upload date (fall back to today if missing — newly synced videos are recent)
                 upload_date = video.get("upload_date")
                 if upload_date and len(upload_date) == 8:
                     db_video["upload_date"] = f"{upload_date[:4]}-{upload_date[4:6]}-{upload_date[6:8]}"
                     db_video["published_at"] = f"{db_video['upload_date']}T00:00:00Z"
                 else:
-                    print(f"    ⚠ WARNING: No upload_date, video will have NULL published_at")
+                    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+                    db_video["upload_date"] = today
+                    db_video["published_at"] = f"{today}T00:00:00Z"
+                    print(f"    ⚠ No upload_date from YouTube, using today: {today}")
 
                 # Add transcript if available
                 if video.get("transcript"):
