@@ -30,7 +30,7 @@ import argparse
 import time
 from pathlib import Path
 from datetime import datetime, timezone
-from src.scraper.db import get_client
+from src.scraper.db import get_client, get_or_create_source
 from src.scraper.transcript import fetch_transcript
 from src.scraper.channel import get_channel_video_ids, get_video_metadata
 
@@ -363,11 +363,18 @@ def sync_new_videos(limit_per_channel: int = 20, new_channel_limit: int = 10):
     for channel_name, channel_handle in channels.items():
         print(f"\n--- {channel_name} ({channel_handle}) ---")
 
-        # Get source_id for this channel
+        # Get source_id for this channel, auto-create if missing
         source_id = source_by_handle.get(channel_handle)
         if not source_id:
-            print(f"  ERROR: Source not found for {channel_handle}")
-            continue
+            print(f"  Creating source for new channel {channel_handle}...")
+            source = get_or_create_source(
+                external_id=channel_handle.lstrip("@"),
+                name=channel_name,
+                handle=channel_handle,
+                source_type="youtube_channel",
+            )
+            source_id = source["id"]
+            source_by_handle[channel_handle] = source_id
 
         # Get existing video IDs AND the latest video date for this channel
         existing_result = (
