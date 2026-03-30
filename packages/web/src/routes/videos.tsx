@@ -10,7 +10,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FilterPanel } from "@/components/filter-panel";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Mic, X } from "lucide-react";
-import { getTechnologySourceIds } from "@/lib/technology-filter";
 
 type DateFilter = "7days" | "30days" | "all";
 type ChannelFilter = "favorites" | "all";
@@ -181,10 +180,6 @@ export function VideosPage() {
       };
       const dateFilterValue = getDateFilter();
 
-      // Default to technology sources; user's category selection overrides
-      const techSourceIds = selectedCategories.length === 0
-        ? await getTechnologySourceIds()
-        : [];
 
       // If filtering by favorites but no favorites exist, show empty
       if (effectiveChannelFilter === "favorites" && favoriteSourceIds.length === 0) {
@@ -225,11 +220,8 @@ export function VideosPage() {
         .select("id", { count: "exact", head: true })
         .not("thumbnail_url", "is", null);
 
-      // Apply channel filter: favorites take priority over tech sources
       if (effectiveChannelFilter === "favorites") {
         countQuery = countQuery.in("source_id", favoriteSourceIds);
-      } else if (techSourceIds.length > 0) {
-        countQuery = countQuery.in("source_id", techSourceIds);
       }
 
       if (filteredVideoIds !== null) {
@@ -269,11 +261,8 @@ export function VideosPage() {
         .order("published_at", { ascending: false })
         .limit(50);
 
-      // Apply channel filter: favorites take priority over tech sources
       if (effectiveChannelFilter === "favorites") {
         query = query.in("source_id", favoriteSourceIds);
-      } else if (techSourceIds.length > 0) {
-        query = query.in("source_id", techSourceIds);
       }
 
       // Apply video ID filter from categories
