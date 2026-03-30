@@ -75,7 +75,8 @@ export function ChannelsPage() {
   // Derive filter state from URL params
   const search = searchParams.get("q") || "";
   const activeTab = (searchParams.get("tab") as TabFilter) || "favorites";
-  const selectedCategories = searchParams.get("categories")?.split(",").filter(Boolean) || [];
+  const categoriesParam = searchParams.get("categories");
+  const selectedCategories = useMemo(() => categoriesParam?.split(",").filter(Boolean) || [], [categoriesParam]);
 
   const updateParam = (key: string, value: string | null) => {
     setSearchParams((prev) => {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
@@ -93,7 +93,8 @@ export function VideosPage() {
   const search = searchParams.get("q") || "";
   const dateFilter = (searchParams.get("date") as DateFilter) || "7days";
   const channelFilter = (searchParams.get("channels") as ChannelFilter) || "favorites";
-  const selectedCategories = searchParams.get("categories")?.split(",").filter(Boolean) || [];
+  const categoriesParam = searchParams.get("categories");
+  const selectedCategories = useMemo(() => categoriesParam?.split(",").filter(Boolean) || [], [categoriesParam]);
   const weekParam = searchParams.get("week");
 
   const updateParam = (key: string, value: string | null) => {
