@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 import { Input } from "@/components/ui/input";
@@ -66,17 +66,40 @@ function getInitials(name: string): string {
 export function ChannelsPage() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [channelRequests, setChannelRequests] = useState<ChannelRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<TabFilter>("favorites");
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [favoritesLoaded, setFavoritesLoaded] = useState(false);
+  // Derive filter state from URL params
+  const search = searchParams.get("q") || "";
+  const activeTab = (searchParams.get("tab") as TabFilter) || "favorites";
+  const selectedCategories = searchParams.get("categories")?.split(",").filter(Boolean) || [];
+
+  const updateParam = (key: string, value: string | null) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (value === null || value === "") {
+        next.delete(key);
+      } else {
+        next.set(key, value);
+      }
+      return next;
+    }, { replace: true });
+  };
+
+  const setSearch = (value: string) => updateParam("q", value);
+  const setActiveTab = (value: TabFilter) => updateParam("tab", value === "favorites" ? null : value);
+  const setSelectedCategories = (categories: string[]) => updateParam("categories", categories.length > 0 ? categories.join(",") : null);
 
   // Keep UI filter state aligned with default data filter on first load.
   useEffect(() => {
+    // Only set default if no categories param in URL already
+    if (searchParams.has("categories")) {
+      return;
+    }
+
     async function initializeTechnologyFilter() {
       const technologyCategoryId = await getTechnologyCategoryId();
       if (technologyCategoryId) {

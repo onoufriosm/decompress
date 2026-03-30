@@ -85,16 +85,33 @@ export function VideosPage() {
   const [videos, setVideos] = useState<Video[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [dateFilter, setDateFilter] = useState<DateFilter>("7days");
-  const [channelFilter, setChannelFilter] = useState<ChannelFilter>("favorites");
   const [favoriteSourceIds, setFavoriteSourceIds] = useState<string[]>([]);
   const [favoritesLoaded, setFavoritesLoaded] = useState(false);
   const [isSearchingAllTime, setIsSearchingAllTime] = useState(false);
 
-  // Check for week filter from URL params
+  // Derive filter state from URL params
+  const search = searchParams.get("q") || "";
+  const dateFilter = (searchParams.get("date") as DateFilter) || "7days";
+  const channelFilter = (searchParams.get("channels") as ChannelFilter) || "favorites";
+  const selectedCategories = searchParams.get("categories")?.split(",").filter(Boolean) || [];
   const weekParam = searchParams.get("week");
+
+  const updateParam = (key: string, value: string | null) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (value === null || value === "") {
+        next.delete(key);
+      } else {
+        next.set(key, value);
+      }
+      return next;
+    }, { replace: true });
+  };
+
+  const setSearch = (value: string) => updateParam("q", value);
+  const setDateFilter = (value: DateFilter) => updateParam("date", value === "7days" ? null : value);
+  const setChannelFilter = (value: ChannelFilter) => updateParam("channels", value === "favorites" ? null : value);
+  const setSelectedCategories = (categories: string[]) => updateParam("categories", categories.length > 0 ? categories.join(",") : null);
 
   // Fetch user's favorite channels
   useEffect(() => {
@@ -104,7 +121,7 @@ export function VideosPage() {
     async function fetchFavorites() {
       if (!user) {
         setFavoriteSourceIds([]);
-        setChannelFilter("all");
+        if (channelFilter === "favorites") setChannelFilter("all");
         setFavoritesLoaded(true);
         return;
       }
@@ -117,7 +134,7 @@ export function VideosPage() {
       const ids = data?.map((f) => f.source_id) || [];
       setFavoriteSourceIds(ids);
       // Default to "all" if user has no favorites
-      if (ids.length === 0) {
+      if (ids.length === 0 && channelFilter === "favorites") {
         setChannelFilter("all");
       }
       setFavoritesLoaded(true);
@@ -351,7 +368,7 @@ export function VideosPage() {
             <Badge variant="secondary" className="gap-1 pr-1">
               Week of {new Date(weekParam).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
               <button
-                onClick={() => setSearchParams({})}
+                onClick={() => updateParam("week", null)}
                 className="ml-1 hover:bg-muted rounded p-0.5"
               >
                 <X className="h-3 w-3" />

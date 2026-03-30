@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -40,11 +40,29 @@ interface TotalCounts {
 }
 
 export function PeoplePage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [people, setPeople] = useState<Person[]>([]);
   const [totalCounts, setTotalCounts] = useState<TotalCounts>({ all: 0, hosts: 0, guests: 0 });
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [activeTab, setActiveTab] = useState<TabFilter>("all");
+
+  // Derive filter state from URL params
+  const search = searchParams.get("q") || "";
+  const activeTab = (searchParams.get("tab") as TabFilter) || "all";
+
+  const updateParam = (key: string, value: string | null) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (value === null || value === "") {
+        next.delete(key);
+      } else {
+        next.set(key, value);
+      }
+      return next;
+    }, { replace: true });
+  };
+
+  const setSearch = (value: string) => updateParam("q", value);
+  const setActiveTab = (value: TabFilter) => updateParam("tab", value === "all" ? null : value);
 
   const filteredPeople = useMemo(() => {
     switch (activeTab) {
