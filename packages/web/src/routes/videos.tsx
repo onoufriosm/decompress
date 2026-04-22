@@ -91,7 +91,7 @@ export function VideosPage() {
   // Derive filter state from URL params
   const search = searchParams.get("q") || "";
   const dateFilter = (searchParams.get("date") as DateFilter) || "7days";
-  const channelFilter = (searchParams.get("channels") as ChannelFilter) || "favorites";
+  const channelFilter = (searchParams.get("channels") as ChannelFilter) || "all";
   const categoriesParam = searchParams.get("categories");
   const selectedCategories = useMemo(() => categoriesParam?.split(",").filter(Boolean) || [], [categoriesParam]);
   const weekParam = searchParams.get("week");
@@ -110,7 +110,7 @@ export function VideosPage() {
 
   const setSearch = (value: string) => updateParam("q", value);
   const setDateFilter = (value: DateFilter) => updateParam("date", value === "7days" ? null : value);
-  const setChannelFilter = (value: ChannelFilter) => updateParam("channels", value === "favorites" ? null : value);
+  const setChannelFilter = (value: ChannelFilter) => updateParam("channels", value === "all" ? null : value);
   const setSelectedCategories = (categories: string[]) => updateParam("categories", categories.length > 0 ? categories.join(",") : null);
 
   // Fetch user's favorite channels
@@ -121,7 +121,6 @@ export function VideosPage() {
     async function fetchFavorites() {
       if (!user) {
         setFavoriteSourceIds([]);
-        if (channelFilter === "favorites") setChannelFilter("all");
         setFavoritesLoaded(true);
         return;
       }
@@ -133,10 +132,6 @@ export function VideosPage() {
 
       const ids = data?.map((f) => f.source_id) || [];
       setFavoriteSourceIds(ids);
-      // Default to "all" if user has no favorites
-      if (ids.length === 0 && channelFilter === "favorites") {
-        setChannelFilter("all");
-      }
       setFavoritesLoaded(true);
     }
 

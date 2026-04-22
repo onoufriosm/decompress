@@ -70,7 +70,7 @@ export function ChannelsPage() {
   const [favoritesLoaded, setFavoritesLoaded] = useState(false);
   // Derive filter state from URL params
   const search = searchParams.get("q") || "";
-  const activeTab = (searchParams.get("tab") as TabFilter) || "favorites";
+  const activeTab = (searchParams.get("tab") as TabFilter) || "all";
   const categoriesParam = searchParams.get("categories");
   const selectedCategories = useMemo(() => categoriesParam?.split(",").filter(Boolean) || [], [categoriesParam]);
 
@@ -87,7 +87,7 @@ export function ChannelsPage() {
   };
 
   const setSearch = (value: string) => updateParam("q", value);
-  const setActiveTab = (value: TabFilter) => updateParam("tab", value === "favorites" ? null : value);
+  const setActiveTab = (value: TabFilter) => updateParam("tab", value === "all" ? null : value);
   const setSelectedCategories = (categories: string[]) => updateParam("categories", categories.length > 0 ? categories.join(",") : null);
 
 
@@ -99,7 +99,6 @@ export function ChannelsPage() {
     async function fetchFavorites() {
       if (!user) {
         setFavoriteIds(new Set());
-        setActiveTab("all");
         setFavoritesLoaded(true);
         return;
       }
@@ -111,10 +110,6 @@ export function ChannelsPage() {
 
       const ids = new Set(data?.map((f) => f.source_id) || []);
       setFavoriteIds(ids);
-      // Default to "all" if user has no favorites
-      if (ids.size === 0) {
-        setActiveTab("all");
-      }
       setFavoritesLoaded(true);
     }
 
